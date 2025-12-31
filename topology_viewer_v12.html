@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Membrane Protein Topology Viewer</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-tertiary: #e2e8f0;
+      --text-primary: #1e293b;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --border: #cbd5e1;
+      --membrane: #94a3b8;
+      --tmd: #fd606a;
+      --tmd-stroke: #832f32;
+      --loop-color: #832F32;
+      --signal: #6b7280;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 2rem; position: relative; }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    h1:hover { color: var(--accent); }
+    .subtitle { color: var(--text-secondary); font-size: 1rem; }
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .stat { text-align: center; min-width: 80px; }
+
+    .stat-clickable { 
+      cursor: pointer; 
+      padding: 0.5rem; 
+      border-radius: 8px; 
+      transition: all 0.2s; 
+    }
+    .stat-clickable:hover { background: var(--bg-secondary); }
+    .stat-clickable.active { background: var(--bg-tertiary); }
+
+    .stats-panel {
+      margin-top: 1.5rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .stats-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stats-panel-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+    }
+
+    .stats-panel-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .csv-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.35rem 0.6rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .csv-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+    .stats-panel-close {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0 0.25rem;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+    .stats-panel-close:hover { color: var(--text-primary); }
+
+    .stats-panel-table-wrapper {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .stats-panel-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .stats-panel-table th, .stats-panel-table td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--bg-tertiary);
+    }
+
+    .stats-panel-table th {
+      background: var(--bg-primary);
+      position: sticky;
+      top: 0;
+      font-weight: 600;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+    .stats-panel-table th:hover { background: var(--bg-secondary); }
+
+    .stats-panel-table tbody tr {
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .stats-panel-table tbody tr:hover { background: var(--bg-secondary); }
+    .stats-panel-table tbody tr:last-child td { border-bottom: none; }
+
+    .stats-panel-table td.gene { font-weight: 600; }
+    .stats-panel-table td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; }
+
+    .stat-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .search-section { margin-bottom: 2rem; }
+
+    .search-row {
+      display: flex;
+      gap: 1rem;
+      max-width: 700px;
+      margin: 0 auto;
+      align-items: flex-start;
+    }
+
+    .search-container { position: relative; flex: 1; }
+
+    .search-input {
+      width: 100%;
+      padding: 0.875rem 1rem 0.875rem 2.75rem;
+      font-size: 1rem;
+      font-family: inherit;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .search-input::placeholder { color: var(--text-muted); }
+
+    .search-icon {
+      position: absolute;
+      left: 0.875rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    .suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-top: 0.25rem;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .suggestion {
+      padding: 0.625rem 1rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--bg-tertiary);
+      transition: background 0.15s;
+    }
+
+    .suggestion:last-child { border-bottom: none; }
+    .suggestion:hover { background: var(--bg-secondary); }
+    .suggestion.selected { background: #dbeafe; }
+    .suggestion-gene { font-weight: 600; color: var(--text-primary); }
+
+    .suggestion-uniprot {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-left: 0.5rem;
+    }
+
+    .suggestion-synonym {
+      font-size: inherit;
+      color: #16a34a;
+      margin-left: 0.5rem;
+      font-style: italic;
+    }
+
+    .suggestion-right { display: flex; align-items: center; gap: 0.5rem; }
+
+    .suggestion-tmds {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      color: var(--text-secondary);
+    }
+
+    .suggestion-topology {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .suggestion-topology.nexo { background: #dcfce7; color: #166534; }
+    .suggestion-topology.ncyt { background: #fef3c7; color: #92400e; }
+
+    .add-btn {
+      padding: 0.25rem 0.5rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .add-btn:hover { background: var(--accent-hover); }
+    .add-btn.added { background: #16a34a; }
+
+    .compare-btn {
+      padding: 0.875rem 1.5rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .compare-btn:hover { background: var(--accent-hover); }
+    .compare-btn:disabled { background: var(--bg-tertiary); color: var(--text-muted); cursor: not-allowed; }
+    .compare-btn .count { background: rgba(255,255,255,0.2); padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.5rem; }
+
+    .selected-proteins {
+      max-width: 700px;
+      margin: 1rem auto 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .selected-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.6rem;
+      background: #dbeafe;
+      border: 1px solid #93c5fd;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: var(--accent);
+    }
+
+    .selected-tag .remove { cursor: pointer; font-weight: bold; opacity: 0.6; transition: opacity 0.2s; }
+    .selected-tag .remove:hover { opacity: 1; }
+
+    .clear-selection-btn {
+      padding: 0.3rem 0.6rem;
+      background: transparent;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      color: #dc2626;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .clear-selection-btn:hover { background: #fee2e2; }
+
+    .diagram-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .welcome-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+    .welcome-state svg { width: 80px; height: 80px; margin-bottom: 1.5rem; opacity: 0.3; }
+    .welcome-state p { font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .welcome-state .hint { font-size: 0.9rem; color: var(--text-muted); }
+
+    .loading-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+    .loading-state .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--bg-tertiary);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-state { text-align: center; padding: 4rem 2rem; color: #dc2626; }
+    .error-state p { margin-bottom: 1rem; }
+    .error-state code { background: #fee2e2; padding: 0.5rem 1rem; border-radius: 4px; font-size: 0.85rem; }
+
+    .protein-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .protein-title { display: flex; align-items: baseline; gap: 0.75rem; }
+    .protein-gene { font-size: 1.5rem; font-weight: 600; }
+
+    .protein-uniprot {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .protein-uniprot a { color: var(--accent); text-decoration: none; }
+    .protein-uniprot a:hover { text-decoration: underline; }
+
+    .protein-meta {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .meta-item { display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem; }
+    .meta-label { color: var(--text-secondary); font-weight: 500; }
+
+    .meta-value {
+      font-weight: 700;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--text-primary);
+      font-size: 1.1rem;
+    }
+
+    .meta-value.yes { color: #16a34a; }
+    .meta-value.no { color: #dc2626; }
+    .meta-value.gpcr-badge { color: #0891b2; background: #ecfeff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
+    .meta-value.e3-badge { color: #7c3aed; background: #f3e8ff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
+
+    .topology-svg-container {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      overflow: visible;
+      position: relative;
+    }
+
+    .topology-svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+    .tooltip {
+      position: fixed;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      z-index: 10000;
+      max-width: 300px;
+      font-size: 0.85rem;
+      pointer-events: auto;
+      display: none;
+    }
+
+    .tooltip.visible { display: block; }
+
+    .tooltip-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--bg-tertiary);
+    }
+
+    .tooltip-main {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .tooltip-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .tooltip-label { color: var(--text-muted); }
+    .tooltip-value { font-family: 'IBM Plex Mono', monospace; color: var(--text-primary); font-weight: 500; }
+
+    .tooltip-seq { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--bg-tertiary); }
+    .tooltip-seq-label { color: var(--text-muted); font-size: 0.75rem; margin-bottom: 4px; }
+
+    .tooltip-seq-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      word-break: break-all;
+      background: var(--bg-secondary);
+      padding: 6px;
+      border-radius: 4px;
+      max-height: 60px;
+      overflow-y: auto;
+      user-select: text;
+      cursor: text;
+    }
+
+    .legend { display: flex; justify-content: center; gap: 2rem; margin-top: 1rem; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--text-secondary); }
+    .legend-color { width: 18px; height: 12px; border-radius: 2px; }
+    .legend-line { width: 18px; height: 4px; border-radius: 2px; }
+
+    .sequence-section { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+    .sequence-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+    .sequence-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); }
+
+    .copy-btn, .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.75rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover, .download-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+    .copy-btn.copied { background: #16a34a; border-color: #16a34a; color: white; }
+
+    .sequence-box {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      max-height: 150px;
+      overflow-y: auto;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.8;
+      word-break: break-all;
+      color: var(--text-primary);
+    }
+
+    .sequence-box .highlight { background: #fef08a; color: #854d0e; font-weight: 600; border-radius: 2px; }
+
+    .back-btn, .clear-all-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      height: 36px;
+    }
+
+    .back-btn {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .back-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+    .clear-all-btn {
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+    }
+
+    .clear-all-btn:hover { background: #fecaca; }
+
+    .comparison-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .comparison-title { font-size: 1.25rem; font-weight: 600; }
+
+    .comparison-buttons {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .comparison-table-wrapper { overflow-x: auto; margin-bottom: 1.5rem; }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-primary);
+      border-radius: 8px;
+      overflow: hidden;
+      table-layout: auto;
+      font-size: 0.85rem;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .comparison-table th {
+      background: var(--bg-tertiary);
+      font-weight: 600;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .comparison-table td.gene { font-weight: 600; }
+    .comparison-table td.mono { font-family: 'IBM Plex Mono', monospace; }
+    .comparison-table tr:last-child td { border-bottom: none; }
+    .comparison-table tr:hover { background: var(--bg-secondary); }
+    .comparison-table .yes { color: #16a34a; font-weight: 600; }
+    .comparison-table .no { color: #dc2626; }
+    .comparison-table .gpcr-badge { color: #0891b2; background: #ecfeff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .comparison-table .e3-badge { color: #7c3aed; background: #f3e8ff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .comparison-table .remove-row { color: var(--text-muted); cursor: pointer; font-size: 1.2rem; transition: color 0.2s; }
+    .comparison-table .remove-row:hover { color: #dc2626; }
+
+    .protein-diagrams { display: flex; flex-direction: column; gap: 2rem; }
+
+    .protein-diagram-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+
+    .protein-diagram-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .protein-diagram-title { font-size: 1.25rem; font-weight: 600; }
+    .protein-diagram-title .uniprot { font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; color: var(--text-muted); margin-left: 0.5rem; }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+      position: relative;
+    }
+
+    .last-updated {
+      position: absolute;
+      bottom: 1rem;
+      right: 2rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
+
+    .hoverable { cursor: pointer; }
+    .hoverable:hover { opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1 id="title">Membrane Protein Topology Viewer</h1>
+
+      <div class="stats">
+        <div class="stat stat-clickable" data-filter="all"><div class="stat-value" id="stat-total">-</div><div class="stat-label">Proteins</div></div>
+        <div class="stat stat-clickable" data-filter="maxtmds"><div class="stat-value" id="stat-max-tmds">-</div><div class="stat-label">Max TMDs</div></div>
+        <div class="stat stat-clickable" data-filter="nexo"><div class="stat-value" id="stat-nexo">-</div><div class="stat-label">N<sub>exo</sub></div></div>
+        <div class="stat stat-clickable" data-filter="ncyt"><div class="stat-value" id="stat-ncyt">-</div><div class="stat-label">N<sub>cyt</sub></div></div>
+        <div class="stat stat-clickable" data-filter="gpcr"><div class="stat-value" id="stat-gpcr">-</div><div class="stat-label">GPCRs</div></div>
+        <div class="stat stat-clickable" data-filter="e3"><div class="stat-value" id="stat-e3">-</div><div class="stat-label">E3 Ligases</div></div>
+        <div class="stat stat-clickable" data-filter="cleavable"><div class="stat-value" id="stat-cleavable">-</div><div class="stat-label">Cleavable Signal</div></div>
+        <div class="stat stat-clickable" data-filter="anchor"><div class="stat-value" id="stat-anchor">-</div><div class="stat-label">Signal Anchor</div></div>
+      </div>
+      <div class="stats-panel" id="stats-panel" style="display: none;">
+        <div class="stats-panel-header">
+          <span class="stats-panel-title" id="stats-panel-title">Proteins</span>
+          <div class="stats-panel-actions">
+            <button class="csv-btn" id="csv-download-btn" title="Download CSV">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              CSV
+            </button>
+            <button class="stats-panel-close" id="stats-panel-close">&times;</button>
+          </div>
+        </div>
+        <div class="stats-panel-table-wrapper">
+          <table class="stats-panel-table" id="stats-panel-table">
+            <thead><tr><th data-sort="gene">Gene ↕</th><th data-sort="uniprot">UniProt ↕</th><th data-sort="length">Length ↕</th><th data-sort="tmds">TMDs ↕</th><th data-sort="nterm">N-term ↕</th></tr></thead>
+            <tbody id="stats-panel-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </header>
+
+    <section class="search-section" id="search-section">
+      <div class="search-row">
+        <div class="search-container">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input type="text" class="search-input" id="search-input" placeholder="Search by gene name or UniProt ID" autocomplete="off" disabled>
+          <div class="suggestions" id="suggestions" style="display: none;"></div>
+        </div>
+        <button class="compare-btn" id="compare-btn" disabled>Compare <span class="count" id="compare-count">0</span></button>
+      </div>
+      <div class="selected-proteins" id="selected-proteins"></div>
+    </section>
+
+    <section class="diagram-container" id="diagram-container">
+      <div class="loading-state" id="loading-state">
+        <div class="spinner"></div>
+        <p>Loading protein data...</p>
+      </div>
+    </section>
+
+    <footer>
+      <div class="last-updated" id="last-updated"></div>
+    </footer>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    // ============================================================
+    // CONFIGURATION - EDIT THIS URL TO POINT TO YOUR JSON FILE
+    // ============================================================
+    const DATA_URL = 'https://raw.githubusercontent.com/xiaozzxi/membrane-topology-data/refs/heads/main/proteins.json';
+    // ============================================================
+
+    let PROTEINS = [];
+    let searchIndex = [];
+    let currentProtein = null;
+    let currentSequence = '';
+    let tooltipTimeout = null;
+    let isTooltipHovered = false;
+    let currentHoveredElement = null;
+    let selectedForComparison = [];
+    let viewMode = 'single';
+    let currentFilter = null;
+    let currentFilteredProteins = [];
+    let currentSortColumn = 'gene';
+    let currentSortDirection = 'asc';
+
+    const searchInput = document.getElementById('search-input');
+    const suggestions = document.getElementById('suggestions');
+    const diagramContainer = document.getElementById('diagram-container');
+    const tooltip = document.getElementById('tooltip');
+    const title = document.getElementById('title');
+    const compareBtn = document.getElementById('compare-btn');
+    const compareCount = document.getElementById('compare-count');
+    const selectedProteinsContainer = document.getElementById('selected-proteins');
+    const searchSection = document.getElementById('search-section');
+    const lastUpdatedEl = document.getElementById('last-updated');
+    const statsPanel = document.getElementById('stats-panel');
+    const statsPanelTitle = document.getElementById('stats-panel-title');
+    const statsPanelTbody = document.getElementById('stats-panel-tbody');
+    const statsPanelClose = document.getElementById('stats-panel-close');
+    const csvDownloadBtn = document.getElementById('csv-download-btn');
+
+    // Load data on page load
+    async function loadData() {
+      try {
+        const response = await fetch(DATA_URL);
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        
+        PROTEINS = await response.json();
+        
+        searchIndex = PROTEINS.map((p, i) => ({
+          gene: (p.gene || '').toLowerCase(),
+          uniprot: (p.uniprot || '').toLowerCase(),
+          synonyms: (p.synonyms || []).map(s => s.toLowerCase()),
+          idx: i
+        }));
+
+        // Update stats
+        document.getElementById('stat-total').textContent = PROTEINS.length.toLocaleString();
+        maxTMDsValue = Math.max(...PROTEINS.map(p => p.numTMDs));
+        document.getElementById('stat-max-tmds').textContent = maxTMDsValue;
+        document.getElementById('stat-nexo').textContent = PROTEINS.filter(p => p.nTerminus === 'outside').length.toLocaleString();
+        document.getElementById('stat-ncyt').textContent = PROTEINS.filter(p => p.nTerminus === 'inside').length.toLocaleString();
+        document.getElementById('stat-gpcr').textContent = PROTEINS.filter(p => p.isGPCR).length.toLocaleString();
+        document.getElementById('stat-e3').textContent = PROTEINS.filter(p => p.isE3Ligase).length.toLocaleString();
+        document.getElementById('stat-cleavable').textContent = PROTEINS.filter(p => p.hasSignalPeptide).length.toLocaleString();
+        document.getElementById('stat-anchor').textContent = PROTEINS.filter(p => !p.hasSignalPeptide).length.toLocaleString();
+
+        // Fetch last modified date from GitHub
+        fetchLastUpdated();
+        
+        searchInput.disabled = false;
+        searchInput.placeholder = 'Search by gene name or UniProt ID';
+        showWelcome();
+        
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        diagramContainer.innerHTML = `
+          <div class="error-state">
+            <p><strong>Failed to load protein data</strong></p>
+            <p>${error.message}</p>
+            <code>${DATA_URL}</code>
+            <p style="margin-top: 1rem; color: var(--text-muted);">
+              Check that the URL is correct and accessible.<br>
+              For GitHub, ensure the repository is public.
+            </p>
+          </div>
+        `;
+      }
+    }
+
+    async function fetchLastUpdated() {
+      try {
+        // Extract owner/repo/path from GitHub raw URL
+        const match = DATA_URL.match(/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/(?:refs\/heads\/)?([^\/]+)\/(.+)/);
+        if (match) {
+          const [, owner, repo, branch, path] = match;
+          const apiUrl = `https://api.github.com/repos/${owner}/${repo}/commits?path=${path}&sha=${branch}&per_page=1`;
+          const response = await fetch(apiUrl);
+          if (response.ok) {
+            const commits = await response.json();
+            if (commits.length > 0) {
+              const date = new Date(commits[0].commit.committer.date);
+              const formatted = date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+              });
+              lastUpdatedEl.textContent = `Last updated: ${formatted}`;
+            }
+          }
+        }
+      } catch (e) {
+        // Silently fail - date display is optional
+        console.log('Could not fetch last updated date');
+      }
+    }
+
+    // Stats panel functionality
+    let maxTMDsValue = 0;
+    
+    const filterFunctions = {
+      'all': () => PROTEINS,
+      'maxtmds': () => PROTEINS.filter(p => p.numTMDs === maxTMDsValue),
+      'nexo': () => PROTEINS.filter(p => p.nTerminus === 'outside'),
+      'ncyt': () => PROTEINS.filter(p => p.nTerminus === 'inside'),
+      'gpcr': () => PROTEINS.filter(p => p.isGPCR),
+      'e3': () => PROTEINS.filter(p => p.isE3Ligase),
+      'cleavable': () => PROTEINS.filter(p => p.hasSignalPeptide),
+      'anchor': () => PROTEINS.filter(p => !p.hasSignalPeptide)
+    };
+
+    const filterLabels = {
+      'all': 'All Proteins',
+      'maxtmds': () => `Proteins with ${maxTMDsValue} TMDs (Max)`,
+      'nexo': 'N-terminus Outside (Nexo)',
+      'ncyt': 'N-terminus Inside (Ncyt)',
+      'gpcr': 'GPCRs',
+      'e3': 'E3 Ligases',
+      'cleavable': 'Cleavable Signal Peptide',
+      'anchor': 'Signal Anchor (No Cleavable Signal)'
+    };
+
+    document.querySelectorAll('.stat-clickable').forEach(stat => {
+      stat.addEventListener('click', () => {
+        const filter = stat.dataset.filter;
+        
+        // Toggle panel if clicking same stat
+        if (currentFilter === filter && statsPanel.style.display !== 'none') {
+          closeStatsPanel();
+          return;
+        }
+        
+        // Update active state
+        document.querySelectorAll('.stat-clickable').forEach(s => s.classList.remove('active'));
+        stat.classList.add('active');
+        
+        // Show panel with filtered data
+        currentFilter = filter;
+        currentFilteredProteins = filterFunctions[filter]();
+        const label = typeof filterLabels[filter] === 'function' ? filterLabels[filter]() : filterLabels[filter];
+        statsPanelTitle.textContent = `${label} (${currentFilteredProteins.length.toLocaleString()})`;
+        
+        // Reset sort
+        currentSortColumn = 'gene';
+        currentSortDirection = 'asc';
+        
+        renderStatsTable();
+        statsPanel.style.display = 'block';
+      });
+    });
+
+    function renderStatsTable() {
+      // Sort proteins
+      const sorted = [...currentFilteredProteins].sort((a, b) => {
+        let valA, valB;
+        switch (currentSortColumn) {
+          case 'gene': valA = (a.gene || '').toLowerCase(); valB = (b.gene || '').toLowerCase(); break;
+          case 'uniprot': valA = a.uniprot.toLowerCase(); valB = b.uniprot.toLowerCase(); break;
+          case 'length': valA = a.length; valB = b.length; break;
+          case 'tmds': valA = a.numTMDs; valB = b.numTMDs; break;
+          case 'nterm': valA = a.nTerminus; valB = b.nTerminus; break;
+          default: valA = (a.gene || '').toLowerCase(); valB = (b.gene || '').toLowerCase();
+        }
+        
+        if (typeof valA === 'string') {
+          return currentSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        }
+        return currentSortDirection === 'asc' ? valA - valB : valB - valA;
+      });
+      
+      statsPanelTbody.innerHTML = sorted.map((p, idx) => `
+        <tr data-idx="${PROTEINS.indexOf(p)}">
+          <td class="gene">${p.gene || 'Unknown'}</td>
+          <td class="mono">${p.uniprot}</td>
+          <td class="mono">${p.length}</td>
+          <td class="mono">${p.numTMDs}</td>
+          <td>${p.nTerminus === 'outside' ? 'out' : 'in'}</td>
+        </tr>
+      `).join('');
+      
+      // Add click handlers to rows
+      statsPanelTbody.querySelectorAll('tr').forEach(row => {
+        row.addEventListener('click', () => {
+          const idx = parseInt(row.dataset.idx);
+          displayProtein(PROTEINS[idx]);
+          searchInput.value = PROTEINS[idx].gene || PROTEINS[idx].uniprot;
+          // Panel stays open for consecutive browsing
+        });
+      });
+    }
+
+    // Column sorting
+    document.querySelectorAll('.stats-panel-table th').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.sort;
+        if (currentSortColumn === col) {
+          currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+          currentSortColumn = col;
+          currentSortDirection = 'asc';
+        }
+        renderStatsTable();
+      });
+    });
+
+    function closeStatsPanel() {
+      statsPanel.style.display = 'none';
+      currentFilter = null;
+      document.querySelectorAll('.stat-clickable').forEach(s => s.classList.remove('active'));
+    }
+
+    statsPanelClose.addEventListener('click', closeStatsPanel);
+
+    // CSV Download
+    csvDownloadBtn.addEventListener('click', () => {
+      if (!currentFilteredProteins.length) return;
+      
+      const headers = ['Gene', 'UniProt', 'Length', 'TMDs', 'N-terminus', 'C-terminus', 'Signal Peptide', 'GPCR', 'E3 Ligase'];
+      const rows = currentFilteredProteins.map(p => [
+        p.gene || 'Unknown',
+        p.uniprot,
+        p.length,
+        p.numTMDs,
+        p.nTerminus,
+        p.cTerminus,
+        p.hasSignalPeptide ? 'Yes' : 'No',
+        p.isGPCR ? 'Yes' : 'No',
+        p.isE3Ligase ? 'Yes' : 'No'
+      ]);
+      
+      const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const label = typeof filterLabels[currentFilter] === 'function' ? filterLabels[currentFilter]() : filterLabels[currentFilter];
+      a.download = `${label.replace(/[^a-z0-9]/gi, '_')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    title.addEventListener('click', () => {
+      searchInput.value = '';
+      selectedForComparison = [];
+      updateSelectedTags();
+      closeStatsPanel();
+      showWelcome();
+    });
+
+    function showWelcome() {
+      viewMode = 'single';
+      currentProtein = null;
+      diagramContainer.innerHTML = `
+        <div class="welcome-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 12h6m-3-3v6m-7 4h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          <p>Search for a protein to view its membrane topology</p>
+          <p class="hint">Enter a gene name (e.g., ABCA1) or UniProt ID (e.g., O95477)</p>
+          <p class="hint" style="margin-top: 0.5rem;">Use "+ Add" to select multiple proteins for comparison</p>
+        </div>
+      `;
+    }
+
+    function addToComparison(idx) {
+      if (!selectedForComparison.includes(idx)) {
+        selectedForComparison.push(idx);
+        updateSelectedTags();
+      }
+    }
+
+    function removeFromComparison(idx) {
+      selectedForComparison = selectedForComparison.filter(i => i !== idx);
+      updateSelectedTags();
+      if (viewMode === 'comparison') {
+        if (selectedForComparison.length >= 2) showComparison();
+        else showWelcome();
+      }
+    }
+
+    function updateSelectedTags() {
+      const hasSelections = selectedForComparison.length > 0;
+      
+      let html = selectedForComparison.map(idx => {
+        const p = PROTEINS[idx];
+        return `<span class="selected-tag">${p.gene || p.uniprot}<span class="remove" onclick="removeFromComparison(${idx})">&times;</span></span>`;
+      }).join('');
+      
+      // Add clear all button if there are selections
+      if (hasSelections) {
+        html += `<button class="clear-selection-btn" onclick="clearAllComparison()">Clear All</button>`;
+      }
+      
+      selectedProteinsContainer.innerHTML = html;
+      compareCount.textContent = selectedForComparison.length;
+      compareBtn.disabled = selectedForComparison.length < 2;
+    }
+
+    compareBtn.addEventListener('click', () => {
+      if (selectedForComparison.length >= 2) showComparison();
+    });
+
+    function showComparison() {
+      viewMode = 'comparison';
+      const proteins = selectedForComparison.map(idx => PROTEINS[idx]);
+      
+      let html = `
+        <div class="comparison-header">
+          <h2 class="comparison-title">Protein Comparison (${proteins.length})</h2>
+          <div class="comparison-buttons">
+            <button class="back-btn" onclick="showWelcome()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              Back
+            </button>
+            <button class="clear-all-btn" onclick="clearAllComparison()">Clear All</button>
+          </div>
+        </div>
+        <div class="comparison-table-wrapper">
+          <table class="comparison-table">
+            <thead><tr><th>Gene</th><th>UniProt</th><th>Length</th><th>TMDs</th><th>N-term</th><th>C-term</th><th>Signal</th><th>GPCR</th><th>E3 Ligase</th><th></th></tr></thead>
+            <tbody>
+              ${proteins.map((p, i) => `
+                <tr>
+                  <td class="gene">${p.gene || 'Unknown'}</td>
+                  <td class="mono"><a href="https://www.uniprot.org/uniprotkb/${p.uniprot}" target="_blank" style="color: var(--accent);">${p.uniprot}</a></td>
+                  <td class="mono">${p.length}</td>
+                  <td class="mono">${p.numTMDs}</td>
+                  <td>${p.nTerminus === 'outside' ? 'out' : 'in'}</td>
+                  <td>${p.cTerminus === 'outside' ? 'out' : 'in'}</td>
+                  <td class="${p.hasSignalPeptide ? 'yes' : 'no'}">${p.hasSignalPeptide ? 'Yes' : 'No'}</td>
+                  <td>${p.isGPCR ? '<span class="gpcr-badge">GPCR</span>' : '-'}</td>
+                  <td>${p.isE3Ligase ? '<span class="e3-badge">E3</span>' : '-'}</td>
+                  <td class="remove-row" data-idx="${selectedForComparison[i]}" title="Remove">&times;</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="protein-diagrams">
+          ${proteins.map((p, i) => `
+            <div class="protein-diagram-card">
+              <div class="protein-diagram-header">
+                <div class="protein-diagram-title">${p.gene || 'Unknown'}<span class="uniprot">${p.uniprot}</span></div>
+                <button class="download-btn" onclick="downloadComparisonSVG(${i}, '${p.gene || p.uniprot}')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download SVG
+                </button>
+              </div>
+              <div class="topology-svg-container">${generateTopologySVG(p, 'comparison-svg-' + i)}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      
+      diagramContainer.innerHTML = html;
+      diagramContainer.querySelectorAll('.remove-row').forEach(btn => {
+        btn.addEventListener('click', (e) => removeFromComparison(parseInt(e.target.dataset.idx)));
+      });
+      setupHoverEvents();
+    }
+
+    function clearAllComparison() {
+      selectedForComparison = [];
+      updateSelectedTags();
+      showWelcome();
+    }
+
+    function downloadComparisonSVG(index, name) {
+      const svg = document.getElementById('comparison-svg-' + index);
+      if (!svg) return;
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const blob = new Blob([svgData], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `topology_${name}.svg`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    tooltip.addEventListener('mouseenter', () => {
+      isTooltipHovered = true;
+      if (tooltipTimeout) { clearTimeout(tooltipTimeout); tooltipTimeout = null; }
+    });
+
+    tooltip.addEventListener('mouseleave', () => {
+      isTooltipHovered = false;
+      hideTooltip();
+    });
+
+    function hideTooltip() {
+      tooltipTimeout = setTimeout(() => {
+        if (!isTooltipHovered && !currentHoveredElement) {
+          tooltip.classList.remove('visible');
+          const sequenceBox = document.getElementById('sequence-box');
+          if (sequenceBox && currentProtein && currentProtein.sequence) {
+            sequenceBox.innerHTML = currentProtein.sequence;
+          }
+        }
+      }, 500);
+    }
+
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      if (query.length < 1) { suggestions.style.display = 'none'; return; }
+
+      const matches = searchIndex.filter(p => 
+        p.gene.includes(query) || 
+        p.uniprot.includes(query) ||
+        p.synonyms.some(s => s.includes(query))
+      ).slice(0, 10);
+      if (matches.length === 0) { suggestions.style.display = 'none'; return; }
+
+      suggestions.innerHTML = matches.map(m => {
+        const protein = PROTEINS[m.idx];
+        const isSelected = selectedForComparison.includes(m.idx);
+        const isNexo = protein.nTerminus === 'outside';
+        // Check if match was via synonym
+        const matchedSynonym = m.synonyms.find(s => s.includes(query));
+        const synonymMatch = matchedSynonym && !m.gene.includes(query) && !m.uniprot.includes(query);
+        return `
+          <div class="suggestion ${isSelected ? 'selected' : ''}" data-idx="${m.idx}">
+            <div>
+              <span class="suggestion-gene">${protein.gene || 'Unknown'}</span>
+              <span class="suggestion-uniprot">${protein.uniprot}</span>
+              ${synonymMatch ? `<span class="suggestion-synonym">${matchedSynonym.toUpperCase()}</span>` : ''}
+            </div>
+            <div class="suggestion-right">
+              <span class="suggestion-topology ${isNexo ? 'nexo' : 'ncyt'}">${isNexo ? 'Nexo' : 'Ncyt'}</span>
+              <span class="suggestion-tmds">${protein.numTMDs} TMD${protein.numTMDs !== 1 ? 's' : ''}</span>
+              <button class="add-btn ${isSelected ? 'added' : ''}" data-idx="${m.idx}">${isSelected ? '✓ Added' : '+ Add'}</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      suggestions.style.display = 'block';
+      suggestions.querySelectorAll('.add-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.dataset.idx);
+          if (selectedForComparison.includes(idx)) removeFromComparison(idx);
+          else addToComparison(idx);
+          searchInput.dispatchEvent(new Event('input'));
+        });
+      });
+    });
+
+    suggestions.addEventListener('click', (e) => {
+      const suggestion = e.target.closest('.suggestion');
+      if (suggestion && !e.target.closest('.add-btn')) {
+        const idx = parseInt(suggestion.dataset.idx);
+        displayProtein(PROTEINS[idx]);
+        suggestions.style.display = 'none';
+        searchInput.value = PROTEINS[idx].gene || PROTEINS[idx].uniprot;
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-container')) suggestions.style.display = 'none';
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const query = searchInput.value.toLowerCase().trim();
+        const match = searchIndex.find(p => 
+          p.gene === query || 
+          p.uniprot === query ||
+          p.synonyms.some(s => s === query)
+        );
+        if (match) { displayProtein(PROTEINS[match.idx]); suggestions.style.display = 'none'; }
+      }
+    });
+
+    function displayProtein(protein) {
+      viewMode = 'single';
+      currentProtein = protein;
+      currentSequence = protein.sequence || '';
+      
+      diagramContainer.innerHTML = `
+        <div class="protein-header">
+          <div class="protein-title">
+            <span class="protein-gene">${protein.gene || 'Unknown Gene'}</span>
+            <span class="protein-uniprot"><a href="https://www.uniprot.org/uniprotkb/${protein.uniprot}" target="_blank">${protein.uniprot}</a></span>
+          </div>
+          <button class="download-btn" onclick="downloadSVG()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download SVG
+          </button>
+        </div>
+        <div class="protein-meta">
+          <div class="meta-item"><span class="meta-label">Length:</span><span class="meta-value">${protein.length} aa</span></div>
+          <div class="meta-item"><span class="meta-label">TMDs:</span><span class="meta-value">${protein.numTMDs}</span></div>
+          <div class="meta-item"><span class="meta-label">N-terminus:</span><span class="meta-value">${protein.nTerminus}</span></div>
+          <div class="meta-item"><span class="meta-label">C-terminus:</span><span class="meta-value">${protein.cTerminus}</span></div>
+          <div class="meta-item"><span class="meta-label">Cleavable signal:</span><span class="meta-value ${protein.hasSignalPeptide ? 'yes' : 'no'}">${protein.hasSignalPeptide ? 'Yes' : 'No'}</span></div>
+          ${protein.isGPCR ? '<div class="meta-item"><span class="meta-value gpcr-badge">GPCR</span></div>' : ''}
+          ${protein.isE3Ligase ? '<div class="meta-item"><span class="meta-value e3-badge">E3 Ligase</span></div>' : ''}
+        </div>
+        ${currentSequence ? `
+        <div class="sequence-section">
+          <div class="sequence-header">
+            <span class="sequence-title">Full Sequence</span>
+            <button class="copy-btn" id="copy-btn" onclick="copySequence()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>Copy</span>
+            </button>
+          </div>
+          <div class="sequence-box" id="sequence-box">${currentSequence}</div>
+        </div>
+        ` : ''}
+        <div class="topology-svg-container">${generateTopologySVG(protein, 'topology-svg')}</div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-color" style="background: #fd606a; border: 3px solid #832f32;"></div><span>Transmembrane Domain</span></div>
+          <div class="legend-item"><div class="legend-color" style="background: #6b7280; border: 1px solid #4b5563;"></div><span>Signal Peptide</span></div>
+          <div class="legend-item"><div class="legend-line" style="background: #832F32;"></div><span>Loop Region</span></div>
+          <div class="legend-item"><svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="#832F32" stroke-width="4" stroke-dasharray="3,6"/></svg><span>Long Loop (&gt;100 aa)</span></div>
+        </div>
+      `;
+      setupHoverEvents();
+    }
+
+    function setupHoverEvents() {
+      document.querySelectorAll('.hoverable').forEach(el => {
+        el.addEventListener('mouseenter', (e) => {
+          currentHoveredElement = el;
+          if (tooltipTimeout) { clearTimeout(tooltipTimeout); tooltipTimeout = null; }
+          
+          const type = el.dataset.type;
+          const start = parseInt(el.dataset.start) || 0;
+          const end = parseInt(el.dataset.end) || 0;
+          const length = parseInt(el.dataset.length) || 0;
+          const seq = el.dataset.seq || '';
+          const label = el.dataset.label || '';
+          
+          let content = '';
+          if (type === 'tmd') {
+            content = `<div class="tooltip-title">${label}</div><div class="tooltip-main">ΔG: ${el.dataset.deltag || 'N/A'}</div>
+              <div class="tooltip-row"><span class="tooltip-label">Position:</span><span class="tooltip-value">${start}-${end}</span></div>
+              <div class="tooltip-row"><span class="tooltip-label">Length:</span><span class="tooltip-value">${length} aa</span></div>
+              ${seq ? `<div class="tooltip-seq"><div class="tooltip-seq-label">Sequence:</div><div class="tooltip-seq-value">${seq}</div></div>` : ''}`;
+          } else if (type === 'loop') {
+            content = `<div class="tooltip-title">${label}</div><div class="tooltip-main">${length} aa</div>
+              <div class="tooltip-row"><span class="tooltip-label">Position:</span><span class="tooltip-value">${start}-${end}</span></div>
+              <div class="tooltip-row"><span class="tooltip-label">Location:</span><span class="tooltip-value">${el.dataset.location || 'unknown'}</span></div>
+              ${seq ? `<div class="tooltip-seq"><div class="tooltip-seq-label">Sequence:</div><div class="tooltip-seq-value">${seq}</div></div>` : ''}`;
+          } else if (type === 'signal') {
+            content = `<div class="tooltip-title">Signal Peptide</div><div class="tooltip-main">${length} aa</div>
+              <div class="tooltip-row"><span class="tooltip-label">Position:</span><span class="tooltip-value">${start}-${end}</span></div>
+              ${seq ? `<div class="tooltip-seq"><div class="tooltip-seq-label">Sequence:</div><div class="tooltip-seq-value">${seq}</div></div>` : ''}`;
+          }
+          
+          tooltip.innerHTML = content;
+          tooltip.classList.add('visible');
+          const rect = el.getBoundingClientRect();
+          tooltip.style.left = (rect.left + rect.width / 2) + 'px';
+          tooltip.style.top = (rect.bottom + 10) + 'px';
+          tooltip.style.transform = 'translate(-50%, 0)';
+          
+          if (start && end && currentProtein && currentProtein.sequence) {
+            const sequenceBox = document.getElementById('sequence-box');
+            if (sequenceBox) {
+              const fullSeq = currentProtein.sequence;
+              sequenceBox.innerHTML = `${fullSeq.substring(0, start - 1)}<span class="highlight">${fullSeq.substring(start - 1, end)}</span>${fullSeq.substring(end)}`;
+            }
+          }
+        });
+        el.addEventListener('mouseleave', () => { currentHoveredElement = null; hideTooltip(); });
+      });
+    }
+
+    function copySequence() {
+      if (!currentSequence) return;
+      navigator.clipboard.writeText(currentSequence).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.classList.add('copied');
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span>Copied!</span>`;
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copy</span>`;
+        }, 2000);
+      });
+    }
+
+    function generateTopologySVG(protein, svgId) {
+      const { tmds, loops, numTMDs, nTerminus, cTerminus, hasSignalPeptide, signalPeptide, sequence } = protein;
+      const actualTMDCount = tmds.length;
+      
+      if (actualTMDCount === 0) {
+        return `<svg class="topology-svg" id="${svgId}" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet"><rect width="800" height="300" fill="white"/><text x="400" y="150" text-anchor="middle" fill="#94a3b8" font-size="24">No TMD data available</text></svg>`;
+      }
+
+      const tmdWidth = 20, tmdHeight = 60, loopStrokeWidth = 10, signalHeight = tmdHeight / 2, loopColor = "#832F32";
+      const aaToPixel = 1.0, minLoopAA = 15, maxLoopAA = 100, longLoopAA = 40;
+      const nTermIsOutside = nTerminus === 'outside';
+      
+      function getEffectiveLoopAA(len) {
+        if (len === undefined || len === null || len <= minLoopAA) return minLoopAA;
+        if (len > maxLoopAA) return longLoopAA;
+        return len;
+      }
+      
+      function isLongLoop(len) { return len !== undefined && len !== null && len > maxLoopAA; }
+      
+      const loopData = [];
+      for (let i = 0; i <= actualTMDCount; i++) {
+        const loopKey = String(i + 1);
+        const srcLoop = loops[loopKey];
+        const isOutside = (i % 2 === 0) === nTermIsOutside;
+        const length = srcLoop ? (srcLoop.length || 0) : 0;
+        loopData.push({
+          length, effectiveLength: getEffectiveLoopAA(length),
+          location: srcLoop ? (srcLoop.location || (isOutside ? 'outside' : 'inside')) : (isOutside ? 'outside' : 'inside'),
+          isLong: isLongLoop(length), start: srcLoop ? (srcLoop.start || 0) : 0, end: srcLoop ? (srcLoop.end || 0) : 0,
+          sequence: srcLoop && sequence ? sequence.substring((srcLoop.start || 1) - 1, srcLoop.end || 0) : '', loopNumber: i + 1
+        });
+      }
+      
+      const padding = 100;
+      const tmdPositions = [];
+      const nLoopChord = 2 * loopData[0].effectiveLength * aaToPixel;
+      let currentX = padding + nLoopChord + 40;
+      if (hasSignalPeptide) currentX += tmdWidth + 100;
+      tmdPositions.push(currentX);
+      
+      for (let i = 1; i < actualTMDCount; i++) {
+        currentX += 2 * loopData[i].effectiveLength * aaToPixel;
+        tmdPositions.push(currentX);
+      }
+      
+      const cLoopChord = 2 * loopData[actualTMDCount].effectiveLength * aaToPixel;
+      const totalWidth = tmdPositions[tmdPositions.length - 1] + tmdWidth + cLoopChord + padding + 40;
+      
+      const outsideLoops = loopData.filter(l => l.location === 'outside');
+      const insideLoops = loopData.filter(l => l.location === 'inside');
+      const maxOutLoop = outsideLoops.length > 0 ? Math.max(...outsideLoops.map(l => l.effectiveLength)) : minLoopAA;
+      const maxInLoop = insideLoops.length > 0 ? Math.max(...insideLoops.map(l => l.effectiveLength)) : minLoopAA;
+      
+      const topMargin = 80 + maxOutLoop * aaToPixel + loopStrokeWidth;
+      const bottomMargin = 100 + maxInLoop * aaToPixel + loopStrokeWidth;
+      const membraneY = topMargin;
+      const totalHeight = topMargin + tmdHeight + bottomMargin;
+      const dashPattern = "5,12";
+      
+      let svg = `<svg class="topology-svg" id="${svgId}" viewBox="0 0 ${totalWidth} ${totalHeight}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">`;
+      svg += `<rect width="${totalWidth}" height="${totalHeight}" fill="white"/>`;
+      svg += `<rect x="0" y="${membraneY}" width="${totalWidth}" height="${tmdHeight}" fill="#94a3b8"/>`;
+      svg += `<text x="10" y="${membraneY + tmdHeight + 50}" fill="#64748b" font-size="36" font-weight="600" font-family="IBM Plex Sans, sans-serif">cytosol</text>`;
+      
+      // N-terminal loop
+      const firstTmdCenterX = tmdPositions[0] + tmdWidth / 2;
+      const nLoop = loopData[0], nLoopR = nLoop.effectiveLength * aaToPixel;
+      const nLoopIsOutside = nLoop.location === 'outside';
+      const nLoopBaseY = nLoopIsOutside ? membraneY : membraneY + tmdHeight;
+      const nLoopSweep = nLoopIsOutside ? 1 : 0;
+      const nLoopLeftX = firstTmdCenterX - 2 * nLoopR;
+      
+      svg += `<path d="M ${nLoopLeftX} ${nLoopBaseY} A ${nLoopR} ${nLoopR} 0 0 ${nLoopSweep} ${firstTmdCenterX} ${nLoopBaseY}" stroke="${loopColor}" stroke-width="${loopStrokeWidth}" fill="none" stroke-linecap="round" class="hoverable" data-type="loop" data-start="${nLoop.start}" data-end="${nLoop.end}" data-length="${nLoop.length}" data-location="${nLoop.location}" data-seq="${nLoop.sequence}" data-label="Loop${nLoop.loopNumber}" ${nLoop.isLong ? `stroke-dasharray="${dashPattern}"` : ''}/>`;
+      
+      const nLabelY = nLoopIsOutside ? nLoopBaseY - nLoopR - 20 : nLoopBaseY + nLoopR + 35;
+      svg += `<text x="${nLoopLeftX}" y="${nLabelY}" text-anchor="middle" fill="#000000" font-size="42" font-weight="700" font-family="IBM Plex Sans, sans-serif">N</text>`;
+      
+      // Internal loops
+      for (let i = 0; i < actualTMDCount - 1; i++) {
+        const loop = loopData[i + 1];
+        const tmd1CenterX = tmdPositions[i] + tmdWidth / 2, tmd2CenterX = tmdPositions[i + 1] + tmdWidth / 2;
+        const radius = loop.effectiveLength * aaToPixel;
+        const isOut = loop.location === 'outside';
+        const loopBaseY = isOut ? membraneY : membraneY + tmdHeight;
+        svg += `<path d="M ${tmd1CenterX} ${loopBaseY} A ${radius} ${radius} 0 0 ${isOut ? 1 : 0} ${tmd2CenterX} ${loopBaseY}" stroke="${loopColor}" stroke-width="${loopStrokeWidth}" fill="none" stroke-linecap="round" class="hoverable" data-type="loop" data-start="${loop.start}" data-end="${loop.end}" data-length="${loop.length}" data-location="${loop.location}" data-seq="${loop.sequence}" data-label="Loop${loop.loopNumber}" ${loop.isLong ? `stroke-dasharray="${dashPattern}"` : ''}/>`;
+      }
+      
+      // C-terminal loop
+      const lastTmdCenterX = tmdPositions[actualTMDCount - 1] + tmdWidth / 2;
+      const cLoop = loopData[actualTMDCount], cLoopR = cLoop.effectiveLength * aaToPixel;
+      const cLoopIsOutside = cLoop.location === 'outside';
+      const cLoopBaseY = cLoopIsOutside ? membraneY : membraneY + tmdHeight;
+      const cLoopRightX = lastTmdCenterX + 2 * cLoopR;
+      
+      svg += `<path d="M ${lastTmdCenterX} ${cLoopBaseY} A ${cLoopR} ${cLoopR} 0 0 ${cLoopIsOutside ? 1 : 0} ${cLoopRightX} ${cLoopBaseY}" stroke="${loopColor}" stroke-width="${loopStrokeWidth}" fill="none" stroke-linecap="round" class="hoverable" data-type="loop" data-start="${cLoop.start}" data-end="${cLoop.end}" data-length="${cLoop.length}" data-location="${cLoop.location}" data-seq="${cLoop.sequence}" data-label="Loop${cLoop.loopNumber}" ${cLoop.isLong ? `stroke-dasharray="${dashPattern}"` : ''}/>`;
+      
+      const cLabelY = cLoopIsOutside ? cLoopBaseY - cLoopR - 20 : cLoopBaseY + cLoopR + 35;
+      svg += `<text x="${cLoopRightX}" y="${cLabelY}" text-anchor="middle" fill="#000000" font-size="42" font-weight="700" font-family="IBM Plex Sans, sans-serif">C</text>`;
+      
+      // Signal peptide
+      if (hasSignalPeptide) {
+        const signalX = nLoopLeftX - tmdWidth - 40, signalY = membraneY;
+        if (signalPeptide) {
+          svg += `<rect x="${signalX}" y="${signalY}" width="${tmdWidth}" height="${signalHeight}" rx="3" ry="3" fill="#6b7280" stroke="#4b5563" stroke-width="1.5" class="hoverable" data-type="signal" data-start="${signalPeptide.start}" data-end="${signalPeptide.end}" data-length="${signalPeptide.length}" data-seq="${signalPeptide.sequence}" data-label="Signal Peptide"/>`;
+        } else {
+          svg += `<rect x="${signalX}" y="${signalY}" width="${tmdWidth}" height="${signalHeight}" rx="3" ry="3" fill="#6b7280" stroke="#4b5563" stroke-width="1.5"/>`;
+        }
+        svg += `<text x="${signalX - 3}" y="${signalY + signalHeight / 2 + 8}" text-anchor="end" fill="#4B5563" font-size="24" font-weight="600" font-family="IBM Plex Sans, sans-serif">signal</text>`;
+      }
+      
+      // TMDs
+      for (let i = 0; i < actualTMDCount; i++) {
+        const x = tmdPositions[i], tmd = tmds[i];
+        const tmdSeq = sequence ? sequence.substring((tmd.start || 1) - 1, tmd.end || 0) : '';
+        svg += `<rect x="${x}" y="${membraneY}" width="${tmdWidth}" height="${tmdHeight}" rx="3" ry="3" fill="#fd606a" stroke="#832f32" stroke-width="3" class="hoverable" data-type="tmd" data-start="${tmd.start}" data-end="${tmd.end}" data-length="${tmd.length}" data-deltag="${tmd.deltaG || 'N/A'}" data-seq="${tmdSeq}" data-label="TMD${i + 1}"/>`;
+      }
+      
+      svg += '</svg>';
+      return svg;
+    }
+
+    function downloadSVG() {
+      const svg = document.getElementById('topology-svg');
+      if (!svg) return;
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const blob = new Blob([svgData], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `topology_${searchInput.value || 'protein'}.svg`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Initialize
+    loadData();
+  </script>
+</body>
+</html>
