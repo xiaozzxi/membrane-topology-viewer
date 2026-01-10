@@ -1360,7 +1360,19 @@
             const sequenceBox = document.getElementById('sequence-box');
             if (sequenceBox) {
               const fullSeq = currentProtein.sequence;
-              sequenceBox.innerHTML = `${fullSeq.substring(0, start - 1)}<span class="highlight">${fullSeq.substring(start - 1, end)}</span>${fullSeq.substring(end)}`;
+              sequenceBox.innerHTML = `${fullSeq.substring(0, start - 1)}<span class="highlight" id="highlight-span">${fullSeq.substring(start - 1, end)}</span>${fullSeq.substring(end)}`;
+              
+              // Auto-scroll to center the highlighted region
+              setTimeout(() => {
+                const highlightSpan = document.getElementById('highlight-span');
+                if (highlightSpan) {
+                  highlightSpan.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'nearest'
+                  });
+                }
+              }, 0);
             }
           }
         });
