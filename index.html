@@ -743,6 +743,9 @@
     let currentHoveredElement = null;
     let selectedForComparison = [];
     let viewMode = 'single';
+    let isInComparisonMode = false;
+    let comparisonScrollPosition = 0;
+    let comparisonProteins = [];
     let currentFilter = null;
     let currentFilteredProteins = [];
     let currentSortColumn = 'gene';
@@ -995,6 +998,7 @@
     function showWelcome() {
       viewMode = 'single';
       currentProtein = null;
+      isInComparisonMode = false;
       diagramContainer.innerHTML = `
         <div class="welcome-state">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -1047,7 +1051,9 @@
 
     function showComparison() {
       viewMode = 'comparison';
-      const proteins = selectedForComparison.map(idx => PROTEINS[idx]);
+      isInComparisonMode = true;
+      comparisonProteins = selectedForComparison.map(idx => PROTEINS[idx]);
+      const proteins = comparisonProteins;
       
       let html = `
         <div class="comparison-header">
@@ -1066,7 +1072,7 @@
             <tbody>
               ${proteins.map((p, i) => `
                 <tr>
-                  <td class="gene">${p.gene || 'Unknown'}</td>
+                  <td class="gene gene-clickable" data-diagram-id="diagram-card-${i}" style="cursor: pointer; color: var(--accent);">${p.gene || 'Unknown'}</td>
                   <td class="mono"><a href="https://www.uniprot.org/uniprotkb/${p.uniprot}" target="_blank" style="color: var(--accent);">${p.uniprot}</a></td>
                   <td class="mono">${p.length}</td>
                   <td class="mono">${p.numTMDs}</td>
@@ -1083,13 +1089,19 @@
         </div>
         <div class="protein-diagrams">
           ${proteins.map((p, i) => `
-            <div class="protein-diagram-card">
+            <div class="protein-diagram-card" id="diagram-card-${i}">
               <div class="protein-diagram-header">
-                <div class="protein-diagram-title">${p.gene || 'Unknown'}<span class="uniprot">${p.uniprot}</span></div>
-                <button class="download-btn" onclick="downloadComparisonSVG(${i}, '${p.gene || p.uniprot}')">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Download SVG
-                </button>
+                <div class="protein-diagram-title protein-name-clickable" data-protein-idx="${selectedForComparison[i]}" style="cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-primary)'">${p.gene || 'Unknown'}<span class="uniprot">${p.uniprot}</span></div>
+                <div style="display: flex; gap: 0.5rem;">
+                  <button class="download-btn" onclick="downloadComparisonSVG(${i}, '${p.gene || p.uniprot}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download SVG
+                  </button>
+                  <button class="download-btn" onclick="scrollToComparisonTop()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="18" x2="12" y2="6"/></svg>
+                    Return to overview
+                  </button>
+                </div>
               </div>
               <div class="topology-svg-container">${generateTopologySVG(p, 'comparison-svg-' + i)}</div>
             </div>
@@ -1098,6 +1110,27 @@
       `;
       
       diagramContainer.innerHTML = html;
+      
+      // Add click handlers for gene names in table to scroll to diagrams
+      diagramContainer.querySelectorAll('.gene-clickable').forEach(el => {
+        el.addEventListener('click', () => {
+          const diagramId = el.dataset.diagramId;
+          const diagramCard = document.getElementById(diagramId);
+          if (diagramCard) {
+            diagramCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      });
+      
+      // Add click handlers for protein names on diagrams to go to detailed view
+      diagramContainer.querySelectorAll('.protein-name-clickable').forEach(el => {
+        el.addEventListener('click', () => {
+          const proteinIdx = parseInt(el.dataset.proteinIdx);
+          comparisonScrollPosition = window.scrollY;
+          displayProtein(PROTEINS[proteinIdx]);
+        });
+      });
+      
       diagramContainer.querySelectorAll('.remove-row').forEach(btn => {
         btn.addEventListener('click', (e) => removeFromComparison(parseInt(e.target.dataset.idx)));
       });
@@ -1108,6 +1141,17 @@
       selectedForComparison = [];
       updateSelectedTags();
       showWelcome();
+    }
+
+    function scrollToComparisonTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function returnToComparison() {
+      showComparison();
+      setTimeout(() => {
+        window.scrollTo({ top: comparisonScrollPosition, behavior: 'smooth' });
+      }, 100);
     }
 
     function downloadComparisonSVG(index, name) {
@@ -1221,6 +1265,8 @@
       viewMode = 'single';
       currentProtein = protein;
       currentSequence = protein.sequence || '';
+      const fromComparison = isInComparisonMode;
+      isInComparisonMode = false;
       
       diagramContainer.innerHTML = `
         <div class="protein-header">
@@ -1228,10 +1274,18 @@
             <span class="protein-gene">${protein.gene || 'Unknown Gene'}</span>
             <span class="protein-uniprot"><a href="https://www.uniprot.org/uniprotkb/${protein.uniprot}" target="_blank">${protein.uniprot}</a></span>
           </div>
-          <button class="download-btn" onclick="downloadSVG()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download SVG
-          </button>
+          <div style="display: flex; gap: 0.5rem;">
+            ${fromComparison ? `
+            <button class="download-btn" onclick="returnToComparison()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              Return to protein comparison
+            </button>
+            ` : ''}
+            <button class="download-btn" onclick="downloadSVG()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download SVG
+            </button>
+          </div>
         </div>
         <div class="protein-meta">
           <div class="meta-item"><span class="meta-label">Length:</span><span class="meta-value">${protein.length} aa</span></div>
