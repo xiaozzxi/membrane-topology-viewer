@@ -1362,15 +1362,25 @@
               const fullSeq = currentProtein.sequence;
               sequenceBox.innerHTML = `${fullSeq.substring(0, start - 1)}<span class="highlight" id="highlight-span">${fullSeq.substring(start - 1, end)}</span>${fullSeq.substring(end)}`;
               
-              // Auto-scroll to center the highlighted region
+              // Auto-scroll to center the highlighted region only if needed
               setTimeout(() => {
                 const highlightSpan = document.getElementById('highlight-span');
                 if (highlightSpan) {
-                  highlightSpan.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center',
-                    inline: 'nearest'
-                  });
+                  // Check if scrolling is needed
+                  const boxRect = sequenceBox.getBoundingClientRect();
+                  const highlightRect = highlightSpan.getBoundingClientRect();
+                  
+                  // Only scroll if highlight is outside visible area
+                  const isAboveView = highlightRect.top < boxRect.top;
+                  const isBelowView = highlightRect.bottom > boxRect.bottom;
+                  
+                  if (isAboveView || isBelowView) {
+                    highlightSpan.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'center',
+                      inline: 'nearest'
+                    });
+                  }
                 }
               }, 0);
             }
