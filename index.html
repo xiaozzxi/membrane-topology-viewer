@@ -64,9 +64,17 @@
 
     .stats-row {
       display: flex;
+      flex-wrap: wrap;
+    }
+
+    .stats-row-1 {
       justify-content: center;
       gap: 1.5rem;
-      flex-wrap: wrap;
+    }
+
+    .stats-row-2 {
+      justify-content: space-between;
+      width: calc(8 * 90px + 7 * 1.5rem); /* Match row 1 width: 8 items + 7 gaps */
     }
 
     .stat { text-align: center; min-width: 80px; }
@@ -688,7 +696,7 @@
 
       <div class="stats">
         <!-- Row 1: Statistical Categories -->
-        <div class="stats-row">
+        <div class="stats-row stats-row-1">
           <div class="stat stat-clickable" data-filter="all"><div class="stat-value" id="stat-total">-</div><div class="stat-label">Proteins</div></div>
           <div class="stat stat-clickable" data-filter="maxtmds"><div class="stat-value" id="stat-max-tmds">-</div><div class="stat-label">Max TMDs</div></div>
           <div class="stat stat-clickable" data-filter="nexo"><div class="stat-value" id="stat-nexo">-</div><div class="stat-label">N<sub>exo</sub></div></div>
@@ -700,7 +708,7 @@
         </div>
         
         <!-- Row 2: Protein Family Categories -->
-        <div class="stats-row">
+        <div class="stats-row stats-row-2">
           <div class="stat stat-clickable" data-filter="gpcr"><div class="stat-value" id="stat-gpcr">-</div><div class="stat-label">GPCRs</div></div>
           <div class="stat stat-clickable" data-filter="e3"><div class="stat-value" id="stat-e3">-</div><div class="stat-label">E3 Ligases</div></div>
           <div class="stat stat-clickable" data-filter="ionchannels"><div class="stat-value" id="stat-ionchannels">-</div><div class="stat-label">Ion channels</div></div>
