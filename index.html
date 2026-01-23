@@ -442,6 +442,7 @@
 
     .meta-value.yes { color: #16a34a; }
     .meta-value.no { color: #dc2626; }
+    .meta-value.essential-badge { color: #059669; background: #d1fae5; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
     .meta-value.gpcr-badge { color: #0891b2; background: #ecfeff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
     .meta-value.e3-badge { color: #7c3aed; background: #f3e8ff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
     .meta-value.ionchannel-badge { color: #ea580c; background: #ffedd5; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
@@ -709,6 +710,7 @@
         
         <!-- Row 2: Protein Family Categories -->
         <div class="stats-row stats-row-2">
+          <div class="stat stat-clickable" data-filter="essential"><div class="stat-value" id="stat-essential">-</div><div class="stat-label">Common essential</div></div>
           <div class="stat stat-clickable" data-filter="gpcr"><div class="stat-value" id="stat-gpcr">-</div><div class="stat-label">GPCRs</div></div>
           <div class="stat stat-clickable" data-filter="e3"><div class="stat-value" id="stat-e3">-</div><div class="stat-label">E3 Ligases</div></div>
           <div class="stat stat-clickable" data-filter="ionchannels"><div class="stat-value" id="stat-ionchannels">-</div><div class="stat-label">Ion channels</div></div>
@@ -830,6 +832,7 @@
         document.getElementById('stat-anchor').textContent = PROTEINS.filter(p => !p.hasSignalPeptide).length.toLocaleString();
         document.getElementById('stat-singlepass').textContent = PROTEINS.filter(p => p.numTMDs === 1).length.toLocaleString();
         document.getElementById('stat-multipass').textContent = PROTEINS.filter(p => p.numTMDs > 1).length.toLocaleString();
+        document.getElementById('stat-essential').textContent = PROTEINS.filter(p => p.isCommonEssential).length.toLocaleString();
         document.getElementById('stat-gpcr').textContent = PROTEINS.filter(p => p.isGPCR).length.toLocaleString();
         document.getElementById('stat-e3').textContent = PROTEINS.filter(p => p.isE3Ligase).length.toLocaleString();
         document.getElementById('stat-ionchannels').textContent = PROTEINS.filter(p => p.isIonChannel).length.toLocaleString();
@@ -899,6 +902,7 @@
       'anchor': () => PROTEINS.filter(p => !p.hasSignalPeptide),
       'singlepass': () => PROTEINS.filter(p => p.numTMDs === 1),
       'multipass': () => PROTEINS.filter(p => p.numTMDs > 1),
+      'essential': () => PROTEINS.filter(p => p.isCommonEssential),
       'gpcr': () => PROTEINS.filter(p => p.isGPCR),
       'e3': () => PROTEINS.filter(p => p.isE3Ligase),
       'ionchannels': () => PROTEINS.filter(p => p.isIonChannel),
@@ -916,6 +920,7 @@
       'anchor': 'Signal Anchor (No Cleavable Signal)',
       'singlepass': 'Single-pass Proteins (1 TMD)',
       'multipass': 'Multi-pass Proteins (>1 TMD)',
+      'essential': 'Common Essential Proteins',
       'gpcr': 'GPCRs',
       'e3': 'E3 Ligases',
       'ionchannels': 'Ion Channels',
@@ -1019,7 +1024,7 @@
     csvDownloadBtn.addEventListener('click', () => {
       if (!currentFilteredProteins.length) return;
       
-      const headers = ['Gene', 'UniProt', 'Length', 'TMDs', 'N-terminus', 'C-terminus', 'Signal Peptide', 'GPCR', 'E3 Ligase', 'Ion Channel', 'SLC', 'ABC', 'ATPase'];
+      const headers = ['Gene', 'UniProt', 'Length', 'TMDs', 'N-terminus', 'C-terminus', 'Signal Peptide', 'Common Essential', 'GPCR', 'E3 Ligase', 'Ion Channel', 'SLC', 'ABC', 'ATPase'];
       const rows = currentFilteredProteins.map(p => [
         p.gene || 'Unknown',
         p.uniprot,
@@ -1028,6 +1033,7 @@
         p.nTerminus,
         p.cTerminus,
         p.hasSignalPeptide ? 'Yes' : 'No',
+        p.isCommonEssential ? 'Yes' : 'No',
         p.isGPCR ? 'Yes' : 'No',
         p.isE3Ligase ? 'Yes' : 'No',
         p.isIonChannel ? 'Yes' : 'No',
@@ -1355,6 +1361,7 @@
           <div class="meta-item"><span class="meta-label">N-terminus:</span><span class="meta-value">${protein.nTerminus}</span></div>
           <div class="meta-item"><span class="meta-label">C-terminus:</span><span class="meta-value">${protein.cTerminus}</span></div>
           <div class="meta-item"><span class="meta-label">Cleavable signal:</span><span class="meta-value ${protein.hasSignalPeptide ? 'yes' : 'no'}">${protein.hasSignalPeptide ? 'Yes' : 'No'}</span></div>
+          ${protein.isCommonEssential ? '<div class="meta-item"><span class="meta-value essential-badge">Common Essential</span></div>' : ''}
           ${protein.isGPCR ? '<div class="meta-item"><span class="meta-value gpcr-badge">GPCR</span></div>' : ''}
           ${protein.isE3Ligase ? '<div class="meta-item"><span class="meta-value e3-badge">E3 Ligase</span></div>' : ''}
           ${protein.isIonChannel ? '<div class="meta-item"><span class="meta-value ionchannel-badge">Ion Channel</span></div>' : ''}
