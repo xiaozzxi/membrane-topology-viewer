@@ -56,9 +56,16 @@
 
     .stats {
       display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      align-items: center;
+    }
+
+    .stats-row {
+      display: flex;
       justify-content: center;
       gap: 1.5rem;
-      margin-top: 1.5rem;
       flex-wrap: wrap;
     }
 
@@ -429,6 +436,10 @@
     .meta-value.no { color: #dc2626; }
     .meta-value.gpcr-badge { color: #0891b2; background: #ecfeff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
     .meta-value.e3-badge { color: #7c3aed; background: #f3e8ff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
+    .meta-value.ionchannel-badge { color: #ea580c; background: #ffedd5; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
+    .meta-value.slc-badge { color: #7c2d12; background: #fed7aa; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
+    .meta-value.abc-badge { color: #be123c; background: #ffe4e6; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
+    .meta-value.atpase-badge { color: #4338ca; background: #e0e7ff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
 
     .topology-svg-container {
       background: var(--bg-primary);
@@ -618,6 +629,12 @@
     .comparison-table .no { color: #dc2626; }
     .comparison-table .gpcr-badge { color: #0891b2; background: #ecfeff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
     .comparison-table .e3-badge { color: #7c3aed; background: #f3e8ff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .comparison-table .vgic-badge { color: #ea580c; background: #ffedd5; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .comparison-table .lgic-badge { color: #0d9488; background: #ccfbf1; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .comparison-table .chloride-badge { color: #059669; background: #d1fae5; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .comparison-table .slc-badge { color: #7c2d12; background: #fed7aa; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .comparison-table .abc-badge { color: #be123c; background: #ffe4e6; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .comparison-table .atpase-badge { color: #4338ca; background: #e0e7ff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
     .comparison-table .remove-row { color: var(--text-muted); cursor: pointer; font-size: 1.2rem; transition: color 0.2s; }
     .comparison-table .remove-row:hover { color: #dc2626; }
 
@@ -670,14 +687,27 @@
       <h1 id="title">Membrane Protein Topology Viewer</h1>
 
       <div class="stats">
-        <div class="stat stat-clickable" data-filter="all"><div class="stat-value" id="stat-total">-</div><div class="stat-label">Proteins</div></div>
-        <div class="stat stat-clickable" data-filter="maxtmds"><div class="stat-value" id="stat-max-tmds">-</div><div class="stat-label">Max TMDs</div></div>
-        <div class="stat stat-clickable" data-filter="nexo"><div class="stat-value" id="stat-nexo">-</div><div class="stat-label">N<sub>exo</sub></div></div>
-        <div class="stat stat-clickable" data-filter="ncyt"><div class="stat-value" id="stat-ncyt">-</div><div class="stat-label">N<sub>cyt</sub></div></div>
-        <div class="stat stat-clickable" data-filter="gpcr"><div class="stat-value" id="stat-gpcr">-</div><div class="stat-label">GPCRs</div></div>
-        <div class="stat stat-clickable" data-filter="e3"><div class="stat-value" id="stat-e3">-</div><div class="stat-label">E3 Ligases</div></div>
-        <div class="stat stat-clickable" data-filter="cleavable"><div class="stat-value" id="stat-cleavable">-</div><div class="stat-label">Cleavable Signal</div></div>
-        <div class="stat stat-clickable" data-filter="anchor"><div class="stat-value" id="stat-anchor">-</div><div class="stat-label">Signal Anchor</div></div>
+        <!-- Row 1: Statistical Categories -->
+        <div class="stats-row">
+          <div class="stat stat-clickable" data-filter="all"><div class="stat-value" id="stat-total">-</div><div class="stat-label">Proteins</div></div>
+          <div class="stat stat-clickable" data-filter="maxtmds"><div class="stat-value" id="stat-max-tmds">-</div><div class="stat-label">Max TMDs</div></div>
+          <div class="stat stat-clickable" data-filter="nexo"><div class="stat-value" id="stat-nexo">-</div><div class="stat-label">N<sub>exo</sub></div></div>
+          <div class="stat stat-clickable" data-filter="ncyt"><div class="stat-value" id="stat-ncyt">-</div><div class="stat-label">N<sub>cyt</sub></div></div>
+          <div class="stat stat-clickable" data-filter="cleavable"><div class="stat-value" id="stat-cleavable">-</div><div class="stat-label">Cleavable Signal</div></div>
+          <div class="stat stat-clickable" data-filter="anchor"><div class="stat-value" id="stat-anchor">-</div><div class="stat-label">Signal Anchor</div></div>
+          <div class="stat stat-clickable" data-filter="singlepass"><div class="stat-value" id="stat-singlepass">-</div><div class="stat-label">Single-pass</div></div>
+          <div class="stat stat-clickable" data-filter="multipass"><div class="stat-value" id="stat-multipass">-</div><div class="stat-label">Multi-pass</div></div>
+        </div>
+        
+        <!-- Row 2: Protein Family Categories -->
+        <div class="stats-row">
+          <div class="stat stat-clickable" data-filter="gpcr"><div class="stat-value" id="stat-gpcr">-</div><div class="stat-label">GPCRs</div></div>
+          <div class="stat stat-clickable" data-filter="e3"><div class="stat-value" id="stat-e3">-</div><div class="stat-label">E3 Ligases</div></div>
+          <div class="stat stat-clickable" data-filter="ionchannels"><div class="stat-value" id="stat-ionchannels">-</div><div class="stat-label">Ion channels</div></div>
+          <div class="stat stat-clickable" data-filter="slc"><div class="stat-value" id="stat-slc">-</div><div class="stat-label">Solute carriers</div></div>
+          <div class="stat stat-clickable" data-filter="abc"><div class="stat-value" id="stat-abc">-</div><div class="stat-label">ABC transporters</div></div>
+          <div class="stat stat-clickable" data-filter="atpase"><div class="stat-value" id="stat-atpase">-</div><div class="stat-label">P-type & V-type ATPases</div></div>
+        </div>
       </div>
       <div class="stats-panel" id="stats-panel" style="display: none;">
         <div class="stats-panel-header">
@@ -788,10 +818,16 @@
         document.getElementById('stat-max-tmds').textContent = maxTMDsValue;
         document.getElementById('stat-nexo').textContent = PROTEINS.filter(p => p.nTerminus === 'outside').length.toLocaleString();
         document.getElementById('stat-ncyt').textContent = PROTEINS.filter(p => p.nTerminus === 'inside').length.toLocaleString();
-        document.getElementById('stat-gpcr').textContent = PROTEINS.filter(p => p.isGPCR).length.toLocaleString();
-        document.getElementById('stat-e3').textContent = PROTEINS.filter(p => p.isE3Ligase).length.toLocaleString();
         document.getElementById('stat-cleavable').textContent = PROTEINS.filter(p => p.hasSignalPeptide).length.toLocaleString();
         document.getElementById('stat-anchor').textContent = PROTEINS.filter(p => !p.hasSignalPeptide).length.toLocaleString();
+        document.getElementById('stat-singlepass').textContent = PROTEINS.filter(p => p.numTMDs === 1).length.toLocaleString();
+        document.getElementById('stat-multipass').textContent = PROTEINS.filter(p => p.numTMDs > 1).length.toLocaleString();
+        document.getElementById('stat-gpcr').textContent = PROTEINS.filter(p => p.isGPCR).length.toLocaleString();
+        document.getElementById('stat-e3').textContent = PROTEINS.filter(p => p.isE3Ligase).length.toLocaleString();
+        document.getElementById('stat-ionchannels').textContent = PROTEINS.filter(p => p.isIonChannel).length.toLocaleString();
+        document.getElementById('stat-slc').textContent = PROTEINS.filter(p => p.isSLC).length.toLocaleString();
+        document.getElementById('stat-abc').textContent = PROTEINS.filter(p => p.isABC).length.toLocaleString();
+        document.getElementById('stat-atpase').textContent = PROTEINS.filter(p => p.isATPase).length.toLocaleString();
 
         // Fetch last modified date from GitHub
         fetchLastUpdated();
@@ -851,10 +887,16 @@
       'maxtmds': () => PROTEINS.filter(p => p.numTMDs === maxTMDsValue),
       'nexo': () => PROTEINS.filter(p => p.nTerminus === 'outside'),
       'ncyt': () => PROTEINS.filter(p => p.nTerminus === 'inside'),
+      'cleavable': () => PROTEINS.filter(p => p.hasSignalPeptide),
+      'anchor': () => PROTEINS.filter(p => !p.hasSignalPeptide),
+      'singlepass': () => PROTEINS.filter(p => p.numTMDs === 1),
+      'multipass': () => PROTEINS.filter(p => p.numTMDs > 1),
       'gpcr': () => PROTEINS.filter(p => p.isGPCR),
       'e3': () => PROTEINS.filter(p => p.isE3Ligase),
-      'cleavable': () => PROTEINS.filter(p => p.hasSignalPeptide),
-      'anchor': () => PROTEINS.filter(p => !p.hasSignalPeptide)
+      'ionchannels': () => PROTEINS.filter(p => p.isIonChannel),
+      'slc': () => PROTEINS.filter(p => p.isSLC),
+      'abc': () => PROTEINS.filter(p => p.isABC),
+      'atpase': () => PROTEINS.filter(p => p.isATPase)
     };
 
     const filterLabels = {
@@ -862,10 +904,16 @@
       'maxtmds': () => `Proteins with ${maxTMDsValue} TMDs (Max)`,
       'nexo': 'N-terminus Outside (Nexo)',
       'ncyt': 'N-terminus Inside (Ncyt)',
+      'cleavable': 'Cleavable Signal Peptide',
+      'anchor': 'Signal Anchor (No Cleavable Signal)',
+      'singlepass': 'Single-pass Proteins (1 TMD)',
+      'multipass': 'Multi-pass Proteins (>1 TMD)',
       'gpcr': 'GPCRs',
       'e3': 'E3 Ligases',
-      'cleavable': 'Cleavable Signal Peptide',
-      'anchor': 'Signal Anchor (No Cleavable Signal)'
+      'ionchannels': 'Ion Channels',
+      'slc': 'Solute Carriers',
+      'abc': 'ABC Transporters',
+      'atpase': 'P-type & V-type ATPases'
     };
 
     document.querySelectorAll('.stat-clickable').forEach(stat => {
@@ -963,7 +1011,7 @@
     csvDownloadBtn.addEventListener('click', () => {
       if (!currentFilteredProteins.length) return;
       
-      const headers = ['Gene', 'UniProt', 'Length', 'TMDs', 'N-terminus', 'C-terminus', 'Signal Peptide', 'GPCR', 'E3 Ligase'];
+      const headers = ['Gene', 'UniProt', 'Length', 'TMDs', 'N-terminus', 'C-terminus', 'Signal Peptide', 'GPCR', 'E3 Ligase', 'Ion Channel', 'SLC', 'ABC', 'ATPase'];
       const rows = currentFilteredProteins.map(p => [
         p.gene || 'Unknown',
         p.uniprot,
@@ -973,7 +1021,11 @@
         p.cTerminus,
         p.hasSignalPeptide ? 'Yes' : 'No',
         p.isGPCR ? 'Yes' : 'No',
-        p.isE3Ligase ? 'Yes' : 'No'
+        p.isE3Ligase ? 'Yes' : 'No',
+        p.isIonChannel ? 'Yes' : 'No',
+        p.isSLC ? 'Yes' : 'No',
+        p.isABC ? 'Yes' : 'No',
+        p.isATPase ? 'Yes' : 'No'
       ]);
       
       const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
@@ -1068,7 +1120,7 @@
         </div>
         <div class="comparison-table-wrapper">
           <table class="comparison-table">
-            <thead><tr><th>Gene</th><th>UniProt</th><th>Length</th><th>TMDs</th><th>N-term</th><th>C-term</th><th>Signal</th><th>GPCR</th><th>E3 Ligase</th><th></th></tr></thead>
+            <thead><tr><th>Gene</th><th>UniProt</th><th>Length</th><th>TMDs</th><th>N-term</th><th>C-term</th><th>Signal</th><th></th></tr></thead>
             <tbody>
               ${proteins.map((p, i) => `
                 <tr>
@@ -1079,8 +1131,6 @@
                   <td>${p.nTerminus === 'outside' ? 'out' : 'in'}</td>
                   <td>${p.cTerminus === 'outside' ? 'out' : 'in'}</td>
                   <td class="${p.hasSignalPeptide ? 'yes' : 'no'}">${p.hasSignalPeptide ? 'Yes' : 'No'}</td>
-                  <td>${p.isGPCR ? '<span class="gpcr-badge">GPCR</span>' : '-'}</td>
-                  <td>${p.isE3Ligase ? '<span class="e3-badge">E3</span>' : '-'}</td>
                   <td class="remove-row" data-idx="${selectedForComparison[i]}" title="Remove">&times;</td>
                 </tr>
               `).join('')}
@@ -1299,6 +1349,10 @@
           <div class="meta-item"><span class="meta-label">Cleavable signal:</span><span class="meta-value ${protein.hasSignalPeptide ? 'yes' : 'no'}">${protein.hasSignalPeptide ? 'Yes' : 'No'}</span></div>
           ${protein.isGPCR ? '<div class="meta-item"><span class="meta-value gpcr-badge">GPCR</span></div>' : ''}
           ${protein.isE3Ligase ? '<div class="meta-item"><span class="meta-value e3-badge">E3 Ligase</span></div>' : ''}
+          ${protein.isIonChannel ? '<div class="meta-item"><span class="meta-value ionchannel-badge">Ion Channel</span></div>' : ''}
+          ${protein.isSLC ? '<div class="meta-item"><span class="meta-value slc-badge">Solute Carrier</span></div>' : ''}
+          ${protein.isABC ? '<div class="meta-item"><span class="meta-value abc-badge">ABC Transporter</span></div>' : ''}
+          ${protein.isATPase ? '<div class="meta-item"><span class="meta-value atpase-badge">P-type & V-type ATPase</span></div>' : ''}
         </div>
         ${currentSequence ? `
         <div class="sequence-section">
