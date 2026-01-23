@@ -713,7 +713,7 @@
           <div class="stat stat-clickable" data-filter="essential"><div class="stat-value" id="stat-essential">-</div><div class="stat-label">Common essential</div></div>
           <div class="stat stat-clickable" data-filter="gpcr"><div class="stat-value" id="stat-gpcr">-</div><div class="stat-label">GPCRs</div></div>
           <div class="stat stat-clickable" data-filter="e3"><div class="stat-value" id="stat-e3">-</div><div class="stat-label">E3 Ligases</div></div>
-          <div class="stat stat-clickable" data-filter="ionchannels"><div class="stat-value" id="stat-ionchannels">-</div><div class="stat-label">Ion channels</div></div>
+          <div class="stat stat-clickable" data-filter="ionchannels"><div class="stat-value" id="stat-ionchannels">-</div><div class="stat-label">Ion & water channels</div></div>
           <div class="stat stat-clickable" data-filter="slc"><div class="stat-value" id="stat-slc">-</div><div class="stat-label">Solute carriers</div></div>
           <div class="stat stat-clickable" data-filter="abc"><div class="stat-value" id="stat-abc">-</div><div class="stat-label">ABC transporters</div></div>
           <div class="stat stat-clickable" data-filter="atpase"><div class="stat-value" id="stat-atpase">-</div><div class="stat-label">P-type & V-type ATPases</div></div>
@@ -923,7 +923,7 @@
       'essential': 'Common Essential Proteins',
       'gpcr': 'GPCRs',
       'e3': 'E3 Ligases',
-      'ionchannels': 'Ion Channels',
+      'ionchannels': 'Ion & Water Channels',
       'slc': 'Solute Carriers',
       'abc': 'ABC Transporters',
       'atpase': 'P-type & V-type ATPases'
@@ -1024,7 +1024,7 @@
     csvDownloadBtn.addEventListener('click', () => {
       if (!currentFilteredProteins.length) return;
       
-      const headers = ['Gene', 'UniProt', 'Length', 'TMDs', 'N-terminus', 'C-terminus', 'Signal Peptide', 'Common Essential', 'GPCR', 'E3 Ligase', 'Ion Channel', 'SLC', 'ABC', 'ATPase'];
+      const headers = ['Gene', 'UniProt', 'Length', 'TMDs', 'N-terminus', 'C-terminus', 'Signal Peptide', 'Common Essential', 'GPCR', 'E3 Ligase', 'Ion & Water Channel', 'SLC', 'ABC', 'ATPase'];
       const rows = currentFilteredProteins.map(p => [
         p.gene || 'Unknown',
         p.uniprot,
@@ -1364,7 +1364,7 @@
           ${protein.isCommonEssential ? '<div class="meta-item"><span class="meta-value essential-badge">Common Essential</span></div>' : ''}
           ${protein.isGPCR ? '<div class="meta-item"><span class="meta-value gpcr-badge">GPCR</span></div>' : ''}
           ${protein.isE3Ligase ? '<div class="meta-item"><span class="meta-value e3-badge">E3 Ligase</span></div>' : ''}
-          ${protein.isIonChannel ? '<div class="meta-item"><span class="meta-value ionchannel-badge">Ion Channel</span></div>' : ''}
+          ${protein.isIonChannel ? '<div class="meta-item"><span class="meta-value ionchannel-badge">Ion & Water Channel</span></div>' : ''}
           ${protein.isSLC ? '<div class="meta-item"><span class="meta-value slc-badge">Solute Carrier</span></div>' : ''}
           ${protein.isABC ? '<div class="meta-item"><span class="meta-value abc-badge">ABC Transporter</span></div>' : ''}
           ${protein.isATPase ? '<div class="meta-item"><span class="meta-value atpase-badge">P-type & V-type ATPase</span></div>' : ''}
