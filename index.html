@@ -1547,6 +1547,13 @@
       
       setupHoverEvents();
       setupSearchInput();
+      
+      // Auto-scroll to protein details when coming from comparison view
+      if (fromComparison) {
+        setTimeout(() => {
+          diagramContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0);
+      }
     }
 
     function setupHoverEvents() {
