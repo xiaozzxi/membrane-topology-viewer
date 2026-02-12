@@ -523,6 +523,90 @@
     .sequence-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
     .sequence-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); }
 
+    .sequence-buttons {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .search-toolbar {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .search-toolbar.hidden {
+      display: none;
+    }
+
+    .sequence-search-input {
+      padding: 0.4rem 0.6rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-family: 'IBM Plex Mono', monospace;
+      min-width: 250px;
+    }
+
+    .sequence-search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .search-nav-btn {
+      padding: 0.4rem 0.6rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .search-nav-btn:hover:not(:disabled) {
+      background: var(--bg-tertiary);
+    }
+
+    .search-nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .search-counter {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-family: 'IBM Plex Mono', monospace;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .search-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0 0.25rem;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .search-close-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .aa.search-match {
+      background: #fef08a;
+      border-radius: 2px;
+    }
+
+    .aa.search-current {
+      background: #fbbf24;
+      border-radius: 2px;
+      font-weight: 600;
+    }
+
     .copy-btn, .download-btn {
       display: inline-flex;
       align-items: center;
@@ -555,6 +639,41 @@
     }
 
     .sequence-box .highlight { background: #fef08a; color: #854d0e; font-weight: 600; border-radius: 2px; }
+
+    .hoverable.topo-highlight {
+      filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
+    }
+
+    @keyframes pulse-highlight {
+      0%, 100% {
+        filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
+      }
+      50% {
+        filter: drop-shadow(0 0 12px rgba(251, 191, 36, 1));
+      }
+    }
+
+    .hoverable.topo-highlight-pulse {
+      animation: pulse-highlight 1s ease-in-out infinite;
+    }
+
+    .aa {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .aa-tooltip {
+      position: fixed;
+      background: var(--text-primary);
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      z-index: 1000;
+      pointer-events: none;
+      display: none;
+    }
 
     .back-btn, .clear-all-btn {
       display: inline-flex;
@@ -779,6 +898,7 @@
   </div>
 
   <div class="tooltip" id="tooltip"></div>
+  <div class="aa-tooltip" id="aa-tooltip"></div>
 
   <script>
     // ============================================================
@@ -1260,7 +1380,7 @@
           tooltip.classList.remove('visible');
           const sequenceBox = document.getElementById('sequence-box');
           if (sequenceBox && currentProtein && currentProtein.sequence) {
-            sequenceBox.innerHTML = currentProtein.sequence;
+            displaySequenceWithNumbers(sequenceBox, currentProtein.sequence);
           }
         }
       }, 500);
@@ -1386,12 +1506,28 @@
         <div class="sequence-section">
           <div class="sequence-header">
             <span class="sequence-title">Full Sequence</span>
-            <button class="copy-btn" id="copy-btn" onclick="copySequence()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              <span>Copy</span>
-            </button>
+            <div class="sequence-buttons">
+              <button class="copy-btn" id="search-btn" onclick="toggleSequenceSearch()" style="display: flex;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <span>Search</span>
+              </button>
+              <div class="search-toolbar hidden" id="search-toolbar">
+                <input type="text" id="sequence-search-input" class="sequence-search-input" placeholder="e.g., LLL, N!P(ST), GXG">
+                <button class="search-nav-btn" id="search-prev-btn" onclick="navigateSearchMatch('prev')" disabled>← Prev</button>
+                <span class="search-counter" id="search-counter">0 of 0</span>
+                <button class="search-nav-btn" id="search-next-btn" onclick="navigateSearchMatch('next')" disabled>Next →</button>
+                <button class="search-close-btn" onclick="toggleSequenceSearch()">×</button>
+              </div>
+              <button class="copy-btn" id="copy-btn" onclick="copySequence()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span>Copy</span>
+              </button>
+            </div>
           </div>
-          <div class="sequence-box" id="sequence-box">${currentSequence}</div>
+          <div class="sequence-box" id="sequence-box"></div>
         </div>
         ` : ''}
         <div class="topology-svg-container">${generateTopologySVG(protein, 'topology-svg')}</div>
@@ -1402,7 +1538,15 @@
           <div class="legend-item"><svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="#832F32" stroke-width="4" stroke-dasharray="3,6"/></svg><span>Long Loop (&gt;100 aa)</span></div>
         </div>
       `;
+      
+      // Populate sequence box with line numbers
+      const sequenceBox = document.getElementById('sequence-box');
+      if (sequenceBox && currentSequence) {
+        displaySequenceWithNumbers(sequenceBox, currentSequence);
+      }
+      
       setupHoverEvents();
+      setupSearchInput();
     }
 
     function setupHoverEvents() {
@@ -1446,25 +1590,51 @@
             const sequenceBox = document.getElementById('sequence-box');
             if (sequenceBox) {
               const fullSeq = currentProtein.sequence;
-              sequenceBox.innerHTML = `${fullSeq.substring(0, start - 1)}<span class="highlight" id="highlight-span">${fullSeq.substring(start - 1, end)}</span>${fullSeq.substring(end)}`;
+              let html = '';
               
-              // Auto-scroll to center the highlighted region only if needed
+              for (let i = 0; i < fullSeq.length; i++) {
+                const position = i + 1;
+                const char = fullSeq[i];
+                
+                // Check if this position is in the highlight range
+                if (position >= start && position <= end) {
+                  if (position === start) {
+                    html += `<span class="highlight" id="highlight-span">`;
+                  }
+                  html += `<span class="aa" data-position="${position}">${char}</span>`;
+                  if (position === end) {
+                    html += `</span>`;
+                  }
+                } else {
+                  html += `<span class="aa" data-position="${position}">${char}</span>`;
+                }
+              }
+              
+              sequenceBox.innerHTML = html;
+              attachSequenceHoverEvents();
+              
+              // Auto-scroll to center the highlighted region
               setTimeout(() => {
                 const highlightSpan = document.getElementById('highlight-span');
-                if (highlightSpan) {
-                  // Check if scrolling is needed
+                if (highlightSpan && sequenceBox) {
+                  // Get positions relative to the scrollable container
                   const boxRect = sequenceBox.getBoundingClientRect();
                   const highlightRect = highlightSpan.getBoundingClientRect();
                   
-                  // Only scroll if highlight is outside visible area
+                  // Calculate if highlight is outside visible area
                   const isAboveView = highlightRect.top < boxRect.top;
                   const isBelowView = highlightRect.bottom > boxRect.bottom;
                   
                   if (isAboveView || isBelowView) {
-                    highlightSpan.scrollIntoView({
-                      behavior: 'smooth',
-                      block: 'center',
-                      inline: 'nearest'
+                    // Calculate the amount to scroll
+                    // We want to center the highlight in the visible area
+                    const highlightRelativeTop = highlightRect.top - boxRect.top;
+                    const currentScroll = sequenceBox.scrollTop;
+                    const targetScroll = currentScroll + highlightRelativeTop - (sequenceBox.clientHeight / 2) + (highlightRect.height / 2);
+                    
+                    sequenceBox.scrollTo({
+                      top: targetScroll,
+                      behavior: 'smooth'
                     });
                   }
                 }
@@ -1476,7 +1646,422 @@
       });
     }
 
+    function displaySequenceWithNumbers(container, sequence) {
+      if (!sequence) {
+        container.innerHTML = '';
+        return;
+      }
+
+      let html = '';
+      
+      for (let i = 0; i < sequence.length; i++) {
+        const position = i + 1;
+        html += `<span class="aa" data-position="${position}">${sequence[i]}</span>`;
+      }
+      
+      container.innerHTML = html;
+      
+      // Attach hover events for reciprocal highlighting
+      attachSequenceHoverEvents();
+    }
+
+    function attachSequenceHoverEvents() {
+      if (!currentProtein) return;
+      
+      const aaElements = document.querySelectorAll('.aa');
+      const aaTooltip = document.getElementById('aa-tooltip');
+      
+      aaElements.forEach(aaEl => {
+        aaEl.addEventListener('mouseenter', function(e) {
+          const position = parseInt(this.getAttribute('data-position'));
+          
+          // Show position tooltip with smart positioning
+          aaTooltip.textContent = position;
+          aaTooltip.style.display = 'block';
+          
+          const rect = this.getBoundingClientRect();
+          const tooltipHeight = 30; // Approximate tooltip height
+          const margin = 8;
+          
+          // Check if there's room below
+          const spaceBelow = window.innerHeight - rect.bottom;
+          const spaceAbove = rect.top;
+          
+          let tooltipX = rect.left + rect.width / 2;
+          let tooltipY;
+          
+          if (spaceBelow >= tooltipHeight + margin) {
+            // Show below
+            tooltipY = rect.bottom + margin;
+          } else if (spaceAbove >= tooltipHeight + margin) {
+            // Show above
+            tooltipY = rect.top - tooltipHeight - margin;
+          } else {
+            // Default to below if neither has enough space
+            tooltipY = rect.bottom + margin;
+          }
+          
+          aaTooltip.style.left = tooltipX + 'px';
+          aaTooltip.style.top = tooltipY + 'px';
+          aaTooltip.style.transform = 'translateX(-50%)';
+          
+          // Find which structural element this position belongs to
+          let matchingElement = null;
+          
+          // Check signal peptide
+          if (currentProtein.signalPeptide && 
+              position >= currentProtein.signalPeptide.start && 
+              position <= currentProtein.signalPeptide.end) {
+            matchingElement = document.querySelector('[data-type="signal"]');
+          }
+          
+          // Check TMDs
+          if (!matchingElement && currentProtein.tmds) {
+            for (let i = 0; i < currentProtein.tmds.length; i++) {
+              const tmd = currentProtein.tmds[i];
+              if (position >= tmd.start && position <= tmd.end) {
+                matchingElement = document.querySelector(`[data-label="TMD${i + 1}"]`);
+                break;
+              }
+            }
+          }
+          
+          // Check loops
+          if (!matchingElement && currentProtein.loops) {
+            for (const loopKey in currentProtein.loops) {
+              const loop = currentProtein.loops[loopKey];
+              if (position >= loop.start && position <= loop.end) {
+                matchingElement = document.querySelector(`[data-label="Loop${loopKey}"]`);
+                break;
+              }
+            }
+          }
+          
+          // Highlight the matching element with subtle yellow tint
+          if (matchingElement) {
+            matchingElement.style.filter = 'brightness(1.3) sepia(0.3) saturate(3) hue-rotate(10deg)';
+          }
+        });
+        
+        aaEl.addEventListener('mouseleave', function() {
+          // Hide tooltip
+          aaTooltip.style.display = 'none';
+          
+          // Remove all highlights
+          document.querySelectorAll('.hoverable').forEach(el => {
+            el.style.filter = '';
+          });
+        });
+      });
+    }
+
     function copySequence() {
+      if (!currentSequence) return;
+      navigator.clipboard.writeText(currentSequence).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.classList.add('copied');
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span>Copied!</span>`;
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copy</span>`;
+        }, 2000);
+      });
+    }
+
+    // Sequence search state
+    let searchMatches = [];
+    let currentSearchIndex = -1;
+
+    function toggleSequenceSearch() {
+      const searchBtn = document.getElementById('search-btn');
+      const searchToolbar = document.getElementById('search-toolbar');
+      const searchInput = document.getElementById('sequence-search-input');
+
+      if (searchToolbar.classList.contains('hidden')) {
+        // Show toolbar, hide button
+        searchToolbar.classList.remove('hidden');
+        searchBtn.style.display = 'none';
+        searchInput.focus();
+      } else {
+        // Hide toolbar, show button, clear search
+        searchToolbar.classList.add('hidden');
+        searchBtn.style.display = 'flex';
+        clearSequenceSearch();
+      }
+    }
+
+    function clearSequenceSearch() {
+      const searchInput = document.getElementById('sequence-search-input');
+      searchInput.value = '';
+      searchMatches = [];
+      currentSearchIndex = -1;
+      updateSearchUI();
+      
+      // Redisplay sequence without highlights
+      const sequenceBox = document.getElementById('sequence-box');
+      if (sequenceBox && currentProtein && currentProtein.sequence) {
+        displaySequenceWithNumbers(sequenceBox, currentProtein.sequence);
+      }
+      
+      // Clear topology highlights
+      document.querySelectorAll('.hoverable').forEach(el => {
+        el.style.filter = '';
+      });
+    }
+
+    function performSequenceSearch(query) {
+      if (!currentProtein || !currentProtein.sequence || !query) {
+        clearSequenceSearch();
+        return;
+      }
+
+      const sequence = currentProtein.sequence.toUpperCase();
+      const searchPattern = query.toUpperCase();
+      
+      // Convert search pattern to regex
+      // X = wildcard for any amino acid
+      // (AB) = either A or B
+      // !X = not X (exclude X)
+      let regexPattern = searchPattern;
+      
+      // Handle parentheses groups: (ST) -> [ST]
+      regexPattern = regexPattern.replace(/\(([A-Z]+)\)/g, '[$1]');
+      
+      // Handle exclusions: !P -> [^P]
+      regexPattern = regexPattern.replace(/!([A-Z])/g, '[^$1]');
+      
+      // Handle wildcards: X -> .
+      regexPattern = regexPattern.replace(/X/g, '.');
+      
+      let regex;
+      try {
+        regex = new RegExp(regexPattern, 'gi');
+      } catch (e) {
+        // Invalid regex pattern - just show no results but don't clear input
+        console.log('Invalid search pattern (still typing?):', e);
+        searchMatches = [];
+        currentSearchIndex = -1;
+        updateSearchUI();
+        
+        // Clear highlights in sequence
+        const sequenceBox = document.getElementById('sequence-box');
+        if (sequenceBox && currentProtein && currentProtein.sequence) {
+          displaySequenceWithNumbers(sequenceBox, currentProtein.sequence);
+        }
+        
+        // Clear topology highlights
+        document.querySelectorAll('.hoverable').forEach(el => {
+          el.style.filter = '';
+        });
+        return;
+      }
+      
+      searchMatches = [];
+      let match;
+      
+      // Find all matches
+      while ((match = regex.exec(sequence)) !== null) {
+        searchMatches.push({
+          start: match.index + 1, // 1-indexed
+          end: match.index + match[0].length,
+          length: match[0].length
+        });
+        // Prevent infinite loop on zero-length matches
+        if (match.index === regex.lastIndex) {
+          regex.lastIndex++;
+        }
+      }
+
+      if (searchMatches.length > 0) {
+        currentSearchIndex = 0;
+        highlightSearchMatches();
+        scrollToCurrentSearchMatch();
+      } else {
+        currentSearchIndex = -1;
+        // Clear highlights but keep the search input
+        const sequenceBox = document.getElementById('sequence-box');
+        if (sequenceBox && currentProtein && currentProtein.sequence) {
+          displaySequenceWithNumbers(sequenceBox, currentProtein.sequence);
+        }
+        
+        document.querySelectorAll('.hoverable').forEach(el => {
+          el.style.filter = '';
+        });
+      }
+
+      updateSearchUI();
+    }
+
+    function highlightSearchMatches() {
+      if (!currentProtein || !currentProtein.sequence) return;
+
+      const sequenceBox = document.getElementById('sequence-box');
+      if (!sequenceBox) return;
+
+      const sequence = currentProtein.sequence;
+      let html = '';
+
+      for (let i = 0; i < sequence.length; i++) {
+        const position = i + 1;
+        const char = sequence[i];
+        
+        // Check if this position is in any match
+        let isCurrentMatch = false;
+        let isOtherMatch = false;
+
+        searchMatches.forEach((match, idx) => {
+          if (position >= match.start && position <= match.end) {
+            if (idx === currentSearchIndex) {
+              isCurrentMatch = true;
+            } else {
+              isOtherMatch = true;
+            }
+          }
+        });
+
+        if (isCurrentMatch) {
+          if (position === searchMatches[currentSearchIndex].start) {
+            html += `<span class="search-current-group" id="current-search-match">`;
+          }
+          html += `<span class="aa search-current" data-position="${position}">${char}</span>`;
+          if (position === searchMatches[currentSearchIndex].end) {
+            html += `</span>`;
+          }
+        } else if (isOtherMatch) {
+          html += `<span class="aa search-match" data-position="${position}">${char}</span>`;
+        } else {
+          html += `<span class="aa" data-position="${position}">${char}</span>`;
+        }
+      }
+
+      sequenceBox.innerHTML = html;
+      attachSequenceHoverEvents();
+
+      // Highlight topology diagram
+      highlightTopologyForSearch();
+    }
+
+    function highlightTopologyForSearch() {
+      // Clear previous highlights
+      document.querySelectorAll('.hoverable').forEach(el => {
+        el.style.filter = '';
+      });
+
+      if (currentSearchIndex < 0 || currentSearchIndex >= searchMatches.length) return;
+
+      const currentMatch = searchMatches[currentSearchIndex];
+      const position = currentMatch.start;
+
+      // Find which structural element contains this position
+      let matchingElement = null;
+
+      // Check signal peptide
+      if (currentProtein.signalPeptide && 
+          position >= currentProtein.signalPeptide.start && 
+          position <= currentProtein.signalPeptide.end) {
+        matchingElement = document.querySelector('[data-type="signal"]');
+      }
+
+      // Check TMDs
+      if (!matchingElement && currentProtein.tmds) {
+        for (let i = 0; i < currentProtein.tmds.length; i++) {
+          const tmd = currentProtein.tmds[i];
+          if (position >= tmd.start && position <= tmd.end) {
+            matchingElement = document.querySelector(`[data-label="TMD${i + 1}"]`);
+            break;
+          }
+        }
+      }
+
+      // Check loops
+      if (!matchingElement && currentProtein.loops) {
+        for (const loopKey in currentProtein.loops) {
+          const loop = currentProtein.loops[loopKey];
+          if (position >= loop.start && position <= loop.end) {
+            matchingElement = document.querySelector(`[data-label="Loop${loopKey}"]`);
+            break;
+          }
+        }
+      }
+
+      // Apply highlight
+      if (matchingElement) {
+        matchingElement.style.filter = 'brightness(1.3) sepia(0.3) saturate(3) hue-rotate(10deg)';
+      }
+    }
+
+    function scrollToCurrentSearchMatch() {
+      const sequenceBox = document.getElementById('sequence-box');
+      const currentMatchEl = document.getElementById('current-search-match');
+
+      if (!sequenceBox || !currentMatchEl) return;
+
+      setTimeout(() => {
+        const boxRect = sequenceBox.getBoundingClientRect();
+        const matchRect = currentMatchEl.getBoundingClientRect();
+
+        // Calculate relative position
+        const matchRelativeTop = matchRect.top - boxRect.top;
+        const currentScroll = sequenceBox.scrollTop;
+        const targetScroll = currentScroll + matchRelativeTop - (sequenceBox.clientHeight / 2) + (matchRect.height / 2);
+
+        sequenceBox.scrollTo({
+          top: targetScroll,
+          behavior: 'smooth'
+        });
+      }, 0);
+    }
+
+    function navigateSearchMatch(direction) {
+      if (searchMatches.length === 0) return;
+
+      if (direction === 'next') {
+        currentSearchIndex = (currentSearchIndex + 1) % searchMatches.length;
+      } else {
+        currentSearchIndex = (currentSearchIndex - 1 + searchMatches.length) % searchMatches.length;
+      }
+
+      highlightSearchMatches();
+      scrollToCurrentSearchMatch();
+      updateSearchUI();
+    }
+
+    function updateSearchUI() {
+      const counter = document.getElementById('search-counter');
+      const prevBtn = document.getElementById('search-prev-btn');
+      const nextBtn = document.getElementById('search-next-btn');
+
+      if (searchMatches.length === 0) {
+        counter.textContent = '0 of 0';
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+      } else {
+        counter.textContent = `${currentSearchIndex + 1} of ${searchMatches.length}`;
+        prevBtn.disabled = false;
+        nextBtn.disabled = false;
+      }
+    }
+
+    function setupSearchInput() {
+      const searchInput = document.getElementById('sequence-search-input');
+      if (searchInput) {
+        // Remove any existing listeners
+        const newInput = searchInput.cloneNode(true);
+        searchInput.parentNode.replaceChild(newInput, searchInput);
+        
+        // Add event listener
+        newInput.addEventListener('input', function(e) {
+          const query = e.target.value.trim();
+          if (query.length === 0) {
+            clearSequenceSearch();
+          } else {
+            performSequenceSearch(query);
+          }
+        });
+      }
+    }
+
+    function copySequence_OLD() {
       if (!currentSequence) return;
       navigator.clipboard.writeText(currentSequence).then(() => {
         const btn = document.getElementById('copy-btn');
