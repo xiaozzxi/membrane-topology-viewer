@@ -831,11 +831,11 @@
         <!-- Row 1: Statistical Categories -->
         <div class="stats-row stats-row-1">
           <div class="stat stat-clickable" data-filter="all"><div class="stat-value" id="stat-total">-</div><div class="stat-label">Proteins</div></div>
-          <div class="stat stat-clickable" data-filter="maxtmds"><div class="stat-value" id="stat-max-tmds">-</div><div class="stat-label">Max TMDs</div></div>
           <div class="stat stat-clickable" data-filter="nexo"><div class="stat-value" id="stat-nexo">-</div><div class="stat-label">N<sub>exo</sub></div></div>
           <div class="stat stat-clickable" data-filter="ncyt"><div class="stat-value" id="stat-ncyt">-</div><div class="stat-label">N<sub>cyt</sub></div></div>
           <div class="stat stat-clickable" data-filter="cleavable"><div class="stat-value" id="stat-cleavable">-</div><div class="stat-label">Cleavable Signal</div></div>
           <div class="stat stat-clickable" data-filter="anchor"><div class="stat-value" id="stat-anchor">-</div><div class="stat-label">Signal Anchor</div></div>
+          <div class="stat stat-clickable" data-filter="tailanchored"><div class="stat-value" id="stat-tailanchored">-</div><div class="stat-label">Tail-Anchored</div></div>
           <div class="stat stat-clickable" data-filter="singlepass"><div class="stat-value" id="stat-singlepass">-</div><div class="stat-label">Single-pass</div></div>
           <div class="stat stat-clickable" data-filter="multipass"><div class="stat-value" id="stat-multipass">-</div><div class="stat-label">Multi-pass</div></div>
         </div>
@@ -957,12 +957,11 @@
 
         // Update stats
         document.getElementById('stat-total').textContent = PROTEINS.length.toLocaleString();
-        maxTMDsValue = Math.max(...PROTEINS.map(p => p.numTMDs));
-        document.getElementById('stat-max-tmds').textContent = maxTMDsValue;
         document.getElementById('stat-nexo').textContent = PROTEINS.filter(p => p.nTerminus === 'outside').length.toLocaleString();
         document.getElementById('stat-ncyt').textContent = PROTEINS.filter(p => p.nTerminus === 'inside').length.toLocaleString();
         document.getElementById('stat-cleavable').textContent = PROTEINS.filter(p => p.hasSignalPeptide).length.toLocaleString();
-        document.getElementById('stat-anchor').textContent = PROTEINS.filter(p => !p.hasSignalPeptide).length.toLocaleString();
+        document.getElementById('stat-anchor').textContent = PROTEINS.filter(p => !p.hasSignalPeptide && !isTailAnchored(p)).length.toLocaleString();
+        document.getElementById('stat-tailanchored').textContent = PROTEINS.filter(isTailAnchored).length.toLocaleString();
         document.getElementById('stat-singlepass').textContent = PROTEINS.filter(p => p.numTMDs === 1).length.toLocaleString();
         document.getElementById('stat-multipass').textContent = PROTEINS.filter(p => p.numTMDs > 1).length.toLocaleString();
         document.getElementById('stat-essential').textContent = PROTEINS.filter(p => p.isCommonEssential).length.toLocaleString();
@@ -1024,15 +1023,19 @@
     }
 
     // Stats panel functionality
-    let maxTMDsValue = 0;
-    
+    const isTailAnchored = p =>
+      p.numTMDs === 1 &&
+      !p.hasSignalPeptide &&
+      p.nTerminus === 'inside' &&
+      p.loops['2'] && p.loops['2'].length <= 50;
+
     const filterFunctions = {
       'all': () => PROTEINS,
-      'maxtmds': () => PROTEINS.filter(p => p.numTMDs === maxTMDsValue),
       'nexo': () => PROTEINS.filter(p => p.nTerminus === 'outside'),
       'ncyt': () => PROTEINS.filter(p => p.nTerminus === 'inside'),
       'cleavable': () => PROTEINS.filter(p => p.hasSignalPeptide),
-      'anchor': () => PROTEINS.filter(p => !p.hasSignalPeptide),
+      'anchor': () => PROTEINS.filter(p => !p.hasSignalPeptide && !isTailAnchored(p)),
+      'tailanchored': () => PROTEINS.filter(isTailAnchored),
       'singlepass': () => PROTEINS.filter(p => p.numTMDs === 1),
       'multipass': () => PROTEINS.filter(p => p.numTMDs > 1),
       'essential': () => PROTEINS.filter(p => p.isCommonEssential),
@@ -1046,11 +1049,11 @@
 
     const filterLabels = {
       'all': 'All Proteins',
-      'maxtmds': () => `Proteins with ${maxTMDsValue} TMDs (Max)`,
       'nexo': 'N-terminus Outside (Nexo)',
       'ncyt': 'N-terminus Inside (Ncyt)',
       'cleavable': 'Cleavable Signal Peptide',
-      'anchor': 'Signal Anchor (No Cleavable Signal)',
+      'anchor': 'Signal Anchor (No Cleavable Signal, Not Tail-Anchored)',
+      'tailanchored': 'Tail-Anchored Proteins',
       'singlepass': 'Single-pass Proteins (1 TMD)',
       'multipass': 'Multi-pass Proteins (>1 TMD)',
       'essential': 'Common Essential Proteins',
