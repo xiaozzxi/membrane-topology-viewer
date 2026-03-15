@@ -19,7 +19,8 @@
       --membrane: #94a3b8;
       --tmd: #fd606a;
       --tmd-stroke: #832f32;
-      --loop-color: #832F32;
+      --loop-color-outside: #c4a96a;
+      --loop-color-inside: #3d6bb5;
       --signal: #6b7280;
     }
 
@@ -1537,8 +1538,10 @@
         <div class="legend">
           <div class="legend-item"><div class="legend-color" style="background: #fd606a; border: 3px solid #832f32;"></div><span>Transmembrane Domain</span></div>
           <div class="legend-item"><div class="legend-color" style="background: #6b7280; border: 1px solid #4b5563;"></div><span>Signal Peptide</span></div>
-          <div class="legend-item"><div class="legend-line" style="background: #832F32;"></div><span>Loop Region</span></div>
-          <div class="legend-item"><svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="#832F32" stroke-width="4" stroke-dasharray="3,6"/></svg><span>Long Loop (&gt;100 aa)</span></div>
+          <div class="legend-item"><div class="legend-line" style="background: #c4a96a;"></div><span>Outside Loop</span></div>
+          <div class="legend-item"><svg width="40" height="6"><line x1="4" y1="3" x2="36" y2="3" stroke="#c4a96a" stroke-width="4" stroke-dasharray="6,7" stroke-linecap="round"/></svg><span>Outside Long Loop (&gt;100 aa)</span></div>
+          <div class="legend-item"><div class="legend-line" style="background: #3d6bb5;"></div><span>Inside Loop</span></div>
+          <div class="legend-item"><svg width="40" height="6"><line x1="4" y1="3" x2="36" y2="3" stroke="#3d6bb5" stroke-width="4" stroke-dasharray="6,7" stroke-linecap="round"/></svg><span>Inside Long Loop (&gt;100 aa)</span></div>
         </div>
       `;
       
@@ -2092,7 +2095,7 @@
         return `<svg class="topology-svg" id="${svgId}" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet"><rect width="800" height="300" fill="white"/><text x="400" y="150" text-anchor="middle" fill="#94a3b8" font-size="24">No TMD data available</text></svg>`;
       }
 
-      const tmdWidth = 20, tmdHeight = 60, loopStrokeWidth = 10, signalHeight = tmdHeight / 2, loopColor = "#832F32";
+      const tmdWidth = 20, tmdHeight = 60, loopStrokeWidth = 10, signalHeight = tmdHeight / 2, loopColorOutside = "#c4a96a", loopColorInside = "#3d6bb5";
       const aaToPixel = 1.0, minLoopAA = 15, maxLoopAA = 100, longLoopAA = 40;
       const nTermIsOutside = nTerminus === 'outside';
       
@@ -2157,7 +2160,7 @@
       const nLoopSweep = nLoopIsOutside ? 1 : 0;
       const nLoopLeftX = firstTmdCenterX - 2 * nLoopR;
       
-      svg += `<path d="M ${nLoopLeftX} ${nLoopBaseY} A ${nLoopR} ${nLoopR} 0 0 ${nLoopSweep} ${firstTmdCenterX} ${nLoopBaseY}" stroke="${loopColor}" stroke-width="${loopStrokeWidth}" fill="none" stroke-linecap="round" class="hoverable" data-type="loop" data-start="${nLoop.start}" data-end="${nLoop.end}" data-length="${nLoop.length}" data-location="${nLoop.location}" data-seq="${nLoop.sequence}" data-label="Loop${nLoop.loopNumber}" ${nLoop.isLong ? `stroke-dasharray="${dashPattern}"` : ''}/>`;
+      svg += `<path d="M ${nLoopLeftX} ${nLoopBaseY} A ${nLoopR} ${nLoopR} 0 0 ${nLoopSweep} ${firstTmdCenterX} ${nLoopBaseY}" stroke="${nLoopIsOutside ? loopColorOutside : loopColorInside}" stroke-width="${loopStrokeWidth}" fill="none" stroke-linecap="round" class="hoverable" data-type="loop" data-start="${nLoop.start}" data-end="${nLoop.end}" data-length="${nLoop.length}" data-location="${nLoop.location}" data-seq="${nLoop.sequence}" data-label="Loop${nLoop.loopNumber}" ${nLoop.isLong ? `stroke-dasharray="${dashPattern}"` : ''}/>`;
       
       const nLabelY = nLoopIsOutside ? nLoopBaseY - nLoopR - 20 : nLoopBaseY + nLoopR + 35;
       svg += `<text x="${nLoopLeftX}" y="${nLabelY}" text-anchor="middle" fill="#000000" font-size="42" font-weight="700" font-family="IBM Plex Sans, sans-serif">N</text>`;
@@ -2169,7 +2172,7 @@
         const radius = loop.effectiveLength * aaToPixel;
         const isOut = loop.location === 'outside';
         const loopBaseY = isOut ? membraneY : membraneY + tmdHeight;
-        svg += `<path d="M ${tmd1CenterX} ${loopBaseY} A ${radius} ${radius} 0 0 ${isOut ? 1 : 0} ${tmd2CenterX} ${loopBaseY}" stroke="${loopColor}" stroke-width="${loopStrokeWidth}" fill="none" stroke-linecap="round" class="hoverable" data-type="loop" data-start="${loop.start}" data-end="${loop.end}" data-length="${loop.length}" data-location="${loop.location}" data-seq="${loop.sequence}" data-label="Loop${loop.loopNumber}" ${loop.isLong ? `stroke-dasharray="${dashPattern}"` : ''}/>`;
+        svg += `<path d="M ${tmd1CenterX} ${loopBaseY} A ${radius} ${radius} 0 0 ${isOut ? 1 : 0} ${tmd2CenterX} ${loopBaseY}" stroke="${isOut ? loopColorOutside : loopColorInside}" stroke-width="${loopStrokeWidth}" fill="none" stroke-linecap="round" class="hoverable" data-type="loop" data-start="${loop.start}" data-end="${loop.end}" data-length="${loop.length}" data-location="${loop.location}" data-seq="${loop.sequence}" data-label="Loop${loop.loopNumber}" ${loop.isLong ? `stroke-dasharray="${dashPattern}"` : ''}/>`;
       }
       
       // C-terminal loop
@@ -2179,7 +2182,7 @@
       const cLoopBaseY = cLoopIsOutside ? membraneY : membraneY + tmdHeight;
       const cLoopRightX = lastTmdCenterX + 2 * cLoopR;
       
-      svg += `<path d="M ${lastTmdCenterX} ${cLoopBaseY} A ${cLoopR} ${cLoopR} 0 0 ${cLoopIsOutside ? 1 : 0} ${cLoopRightX} ${cLoopBaseY}" stroke="${loopColor}" stroke-width="${loopStrokeWidth}" fill="none" stroke-linecap="round" class="hoverable" data-type="loop" data-start="${cLoop.start}" data-end="${cLoop.end}" data-length="${cLoop.length}" data-location="${cLoop.location}" data-seq="${cLoop.sequence}" data-label="Loop${cLoop.loopNumber}" ${cLoop.isLong ? `stroke-dasharray="${dashPattern}"` : ''}/>`;
+      svg += `<path d="M ${lastTmdCenterX} ${cLoopBaseY} A ${cLoopR} ${cLoopR} 0 0 ${cLoopIsOutside ? 1 : 0} ${cLoopRightX} ${cLoopBaseY}" stroke="${cLoopIsOutside ? loopColorOutside : loopColorInside}" stroke-width="${loopStrokeWidth}" fill="none" stroke-linecap="round" class="hoverable" data-type="loop" data-start="${cLoop.start}" data-end="${cLoop.end}" data-length="${cLoop.length}" data-location="${cLoop.location}" data-seq="${cLoop.sequence}" data-label="Loop${cLoop.loopNumber}" ${cLoop.isLong ? `stroke-dasharray="${dashPattern}"` : ''}/>`;
       
       const cLabelY = cLoopIsOutside ? cLoopBaseY - cLoopR - 20 : cLoopBaseY + cLoopR + 35;
       svg += `<text x="${cLoopRightX}" y="${cLabelY}" text-anchor="middle" fill="#000000" font-size="42" font-weight="700" font-family="IBM Plex Sans, sans-serif">C</text>`;
