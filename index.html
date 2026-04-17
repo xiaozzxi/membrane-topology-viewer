@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Membrane Protein Topology Viewer</title>
-  <script data-goatcounter="https://topologyviewer.goatcounter.com/count"
-          async src="//gc.zgo.at/count.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -947,10 +945,7 @@
     // Load data on page load
     async function loadData() {
       try {
-        const response = await fetch(DATA_URL);
-        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        
-        PROTEINS = await response.json();
+        PROTEINS = PROTEINS_INLINE;
         
         searchIndex = PROTEINS.map((p, i) => ({
           gene: (p.gene || '').toLowerCase(),
@@ -976,8 +971,8 @@
         document.getElementById('stat-abc').textContent = PROTEINS.filter(p => p.isABC).length.toLocaleString();
         document.getElementById('stat-atpase').textContent = PROTEINS.filter(p => p.isATPase).length.toLocaleString();
 
-        // Fetch last modified date from GitHub
-        fetchLastUpdated();
+        // No remote fetch needed - data is inline
+        // fetchLastUpdated() removed (no GitHub URL)
         
         searchInput.disabled = false;
         searchInput.placeholder = 'Search by gene name or UniProt ID';
@@ -989,7 +984,7 @@
           <div class="error-state">
             <p><strong>Failed to load protein data</strong></p>
             <p>${error.message}</p>
-            <code>${DATA_URL}</code>
+            <code>Check that PROTEINS_INLINE is populated correctly.</code>
             <p style="margin-top: 1rem; color: var(--text-muted);">
               Check that the URL is correct and accessible.<br>
               For GitHub, ensure the repository is public.
@@ -1470,15 +1465,6 @@
       currentProtein = protein;
       currentSequence = protein.sequence || '';
       const fromComparison = isInComparisonMode;
-
-      // GoatCounter: track which protein was viewed
-      if (window.goatcounter && window.goatcounter.count) {
-        window.goatcounter.count({
-          path: 'protein/' + (protein.gene || protein.uniprot),
-          title: (protein.gene || protein.uniprot) + ' — ' + (protein.uniprot || ''),
-          event: true,
-        });
-      }
       isInComparisonMode = false;
       
       diagramContainer.innerHTML = `
